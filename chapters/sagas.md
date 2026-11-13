@@ -4,6 +4,8 @@ Payment fails after stock was reserved. Releasing the stock also fails once. Rec
 
 **You will:** Define a durable compensation workflow and explain why compensation differs from rollback. **Prerequisites:** local transactions, outboxes and idempotency. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: saga -->
+
 ## Predict before running
 
 If payment is declined and releasing inventory times out, may the order be marked fully recovered? What if the release succeeded but its acknowledgement was lost?

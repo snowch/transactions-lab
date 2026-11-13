@@ -4,6 +4,8 @@ A transfer can preserve the total money and still pay the wrong person. Write th
 
 **You will:** distinguish a conservation rule from the intended business outcome and write an independent verification query. **Prerequisites:** basic SELECT and UPDATE. **Runtime:** real PostgreSQL through PGlite; one private connection on this page.
 
+<!-- concept: boundary -->
+
 ## Predict
 
 Alice and Bob each start with 100. Alice asks to send Bob 30. What should each balance be? Is checking a total of 200 sufficient?

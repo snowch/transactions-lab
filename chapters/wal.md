@@ -4,6 +4,8 @@ A transfer changes two pages. The machine can stop after either write. Give reco
 
 **You will:** Trace write-ahead logging, identify a durable commit record, and recover every prefix of the write sequence. **Prerequisites:** atomicity and file persistence. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: wal -->
+
 ## Predict before running
 
 Starting at Alice = 100 and Bob = 100, what survives a crash after Alice’s new page reaches disk but before Bob’s? Which information would let recovery finish safely?

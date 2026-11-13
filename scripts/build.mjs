@@ -7,10 +7,17 @@ import {groups,pages,labs,coreLabs,advancedLabs} from './catalog.mjs';
 import {definitions,crashModels} from '../web/models.js';
 import {mechanismSources} from '../web/mechanisms.js';
 import {benches,referenceSource} from '../web/benchmarks.js';
+import {concepts} from '../chapters/concepts.mjs';
+import {drawConcept,conceptFigure} from './concept-diagrams.mjs';
 const revision=execFileSync('git',['rev-parse','--short=12','HEAD'],{encoding:'utf8'}).trim()+(execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim()?'-working-tree':'');
 const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 await rm('.stage',{recursive:true,force:true});
 await mkdir('.stage/public/downloads',{recursive:true});
+await mkdir('.stage/public/concepts',{recursive:true});
+for(const [id,concept] of Object.entries(concepts)){
+  await writeFile(`.stage/public/concepts/${id}.svg`,drawConcept(id,concept));
+  await writeFile(`.stage/public/concepts/${id}-mobile.svg`,drawConcept(id,concept,true));
+}
 await cp('web','.stage/web',{recursive:true});
 for(const file of ['mechanisms.js','benchmarks.js','verify-implementation.mjs'])await cp(`web/${file}`,`.stage/public/downloads/${file}`);
 await cp('native','.stage/public/downloads/native',{recursive:true,filter:s=>!s.includes('__pycache__')});
@@ -20,6 +27,10 @@ for(const file of ['pglite.wasm','initdb.wasm','pglite.data'])await cp(`node_mod
 const designFields=[['invariant','What must remain true?'],['participants','Who owns each part of the state?'],['boundary','What commits together? What is outside?'],['concurrency','Which operations compete? How are they protected?'],['commit','What durable event makes the decision final?'],['recovery','How do retries, unknown outcomes and compensation work?'],['mechanism','Which structures and algorithm enforce the guarantee?'],['implementation','Which primitive did you implement, and which cases did it pass?'],['evidence','Which baseline, broken and repaired runs support the design?'],['limits','What failure assumptions and liveness limits remain?']];
 for(const [i,page] of pages.entries()) {
   let body=marked.parse(await readFile(page.file,'utf8')),cell=0;
+  body=body.replace(/<!-- concept: ([a-zA-Z]+) -->/g,(_,id)=>{
+    if(!concepts[id])throw new Error(`${page.slug}: unknown concept ${id}`);
+    return conceptFigure(id,concepts[id]);
+  });
   body=body.replace(/<pre><code class="language-sql">([\s\S]*?)<\/code><\/pre>/g,(_,code)=>`<section class="sql-cell" aria-label="SQL experiment ${++cell}"><div class="cell-heading"><span>SQL · ${String(cell).padStart(2,'0')} / real PostgreSQL</span><div><button class="copy" type="button">Copy SQL</button><button class="restore" type="button">Restore SQL</button></div></div><textarea spellcheck="false" aria-label="SQL experiment ${cell}" rows="${Math.min(18,code.split('\n').length+1)}">${code}</textarea><div class="cell-actions"><button class="run" type="button" disabled>Run SQL</button><span class="cell-hint">Ctrl / ⌘ + Enter</span></div><p class="execution-note" hidden></p><div class="result" role="region" aria-label="Results for experiment ${cell}" tabindex="0"></div></section>`);
   body=body.replace(/<pre><code class="language-(sh|python|sql-server)">([\s\S]*?)<\/code><\/pre>/g,(_,lang,code)=>`<section class="terminal-cell"><div class="cell-heading"><span>${lang==='sql-server'?'Real server · psql':lang==='sh'?'Terminal · your machine':'Python · your machine'}</span><button class="copy" type="button">Copy</button></div><pre><code>${code}</code></pre></section>`);
   if(page.model){const def=definitions[page.model];

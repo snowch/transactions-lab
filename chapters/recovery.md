@@ -4,6 +4,8 @@ Recovery writes the missing result, then fails before clearing its work list. Th
 
 **You will:** Choose a replay-safe representation and test repeated failure during recovery. **Prerequisites:** the WAL commit point. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: recovery -->
+
 ## Predict before running
 
 A committed increment of 20 has already been replayed into a balance of 100. The log survives. What happens if startup adds 20 again?

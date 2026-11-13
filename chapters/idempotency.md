@@ -4,6 +4,8 @@ The server commits the charge. The response disappears. The client knows the out
 
 **You will:** Recover an ambiguous outcome with stable request identity and bind that identity to the original payload and result. **Prerequisites:** retries and external effects. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: idempotency -->
+
 ## Predict before running
 
 When a request times out, is it safe to generate a new payment key and try again? Which server-side state would make retry safe?

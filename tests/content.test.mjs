@@ -10,6 +10,10 @@ test('all investigations offer experiment, feedback, transfer and design record'
   for(const lab of labs){
     const source=await readFile(lab.file,'utf8'),html=await readFile(`dist/${lab.slug}.html`,'utf8');
     assert.match(source,/Transfer the idea/);assert.match(source,/<details>/);assert.match(html,/data-note="invariant"/);
+    assert.match(source,/<!-- concept: [a-zA-Z]+ -->/);
+    assert.match(html,/class="concept-figure"/);
+    assert.ok(!html.includes('<!-- concept:'),`${lab.slug}: concept rendered`);
+    assert.ok(html.indexOf('class="concept-figure"')<html.indexOf('>Predict'),`${lab.slug}: concept before prediction`);
     if(lab.model){assert.ok(definitions[lab.model]);assert.match(html,/class="experiment"/);assert.ok(!html.includes('<!-- experiment -->'));}
     if(benches[lab.model]){assert.match(html,/class="implementation-bench"/);assert.match(html,/Read the engine code executed/);assert.ok(!html.includes('<!-- implementation -->'));}
     assert.ok(source.length>1500,`${lab.slug}: substantive investigation`);

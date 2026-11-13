@@ -4,6 +4,8 @@ Readers see the new configuration, the writer reports success, and a crash bring
 
 **You will:** Separate file contents from the directory entry and place the acknowledgement after the required persistence operations. **Prerequisites:** atomicity and failure boundaries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: files -->
+
 ## Predict before running
 
 Does an atomic rename guarantee that the new bytes and replacement name survive power loss? Which exact operation would justify saying “saved”?

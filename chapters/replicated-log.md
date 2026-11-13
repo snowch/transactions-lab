@@ -4,6 +4,8 @@ A coordinator's decision can survive its current leader only if the protocol pre
 
 **You will:** inspect term/index pairs, implement election log comparison, trace AppendEntries prefix matching, and locate quorum commit before acknowledgement. **Prerequisites:** two-phase commit and the consensus/commit distinction. **Runtime:** a three-node Raft-style log core with explicit send events.
 
+<!-- concept: replication -->
+
 ## Predict
 
 A writes COMMIT locally and replies before either follower has it. A becomes unreachable. Can B and C elect a leader whose log does not contain that decision? What must change before the original reply is justified?

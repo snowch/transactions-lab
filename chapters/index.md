@@ -10,7 +10,7 @@ How can a database hide uncommitted work, preserve an old snapshot, or recover a
 
 A transaction is more than BEGIN and COMMIT. Inside the system are transaction descriptors, private write sets, tuple versions, snapshots, lock queues, validation rules, buffer frames and log records. Each exists because another operation or a crash can occur at an inconvenient point.
 
-You will trace those structures in live diagrams, implement small algorithms, break their assumptions and explain how the resulting behavior reaches an application. Version chains, wait-for arrows, durable log strips, replica lanes and CLR links redraw from the exact execution state as you step or recover. Transaction design stays part of the course: it becomes easier to choose a boundary once you can explain what enforces it.
+Start each investigation with an annotated concept diagram: see what the components do, how they relate and why a failure breaks the promise. Then predict, trace the structures in a live experiment, implement small algorithms and explain the resulting application behavior. The concept illustrations teach the mechanism before you run it; the live diagrams show the exact execution state as you step or recover. Transaction design stays part of the course: it becomes easier to choose a boundary once you can explain what enforces it.
 
 **Build → predict → step → break → repair → explain.**
 

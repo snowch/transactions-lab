@@ -4,6 +4,8 @@ The debit succeeds. The credit fails. Decide which changes may be left behind an
 
 **You will:** observe rollback, use a savepoint and separate atomicity from isolation and durability. **Prerequisites:** chapter 1. **Runtime:** real PostgreSQL, one connection; no competing client.
 
+<!-- concept: boundary -->
+
 ## Predict
 
 If you debit Alice and lose the request before crediting Bob, can a later credit safely be treated as a separate request? What if the client does not know whether the debit committed?

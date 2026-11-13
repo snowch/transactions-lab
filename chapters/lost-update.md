@@ -4,6 +4,8 @@ Two reservations succeed, but the stock falls only once. Force the schedule that
 
 **You will:** Trace a stale read, identify a lost update, and move a decision into an atomic conditional operation. **Prerequisites:** chapters 1–4. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: lostUpdate -->
+
 ## Predict before running
 
 Both clients read stock = 2. Each computes “the stock I read minus one.” Predict stock and reservation count after both write. What equation must still hold?

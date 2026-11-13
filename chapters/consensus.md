@@ -4,6 +4,8 @@ Replicating a coordinator can make a recorded decision more available. It cannot
 
 **You will:** Distinguish consensus over a decision log from atomic commit across resource owners. **Prerequisites:** two-phase commit. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: replication -->
+
 ## Predict before running
 
 Three coordinator replicas have a quorum of two. If only one is reachable, can this model establish an authoritative decision? If two are reachable but a participant vote is missing, does the quorum supply that vote?

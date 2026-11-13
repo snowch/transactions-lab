@@ -4,6 +4,8 @@ A buffer pool can write an uncommitted page before commit and leave a committed 
 
 **You will:** trace before/after log records, dirty-page recLSNs, pageLSNs, a checkpoint and analysis/redo/undo. **Prerequisites:** WAL ordering and the transfer invariant. **Runtime:** an executable single-writer log and page engine, not a production storage manager.
 
+<!-- concept: recovery -->
+
 ## Predict
 
 Alice's uncommitted debit reaches its data page. Bob's credit exists only in memory. What must recovery do if the transaction never committed? What if its COMMIT record is durable but Bob's data page is still old?

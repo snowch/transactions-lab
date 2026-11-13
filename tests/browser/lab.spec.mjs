@@ -2,6 +2,8 @@ import {test,expect} from '@playwright/test';
 import {pages,labs} from '../../scripts/catalog.mjs';
 import {definitions} from '../../web/models.js';
 import {benches,referenceSource} from '../../web/benchmarks.js';
+import {concepts} from '../../chapters/concepts.mjs';
+import {readFile} from 'node:fs/promises';
 
 test('the complete course works under the Pages subpath without broken resources',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -237,5 +239,61 @@ test('diagrams remain readable at narrow widths and controls stay available whil
     const controls=await page.locator('.experiment-console').boundingBox();expect(controls.y).toBeGreaterThanOrEqual(64);expect(controls.y).toBeLessThan(120);
     expect((await drawing.boundingBox()).y).toBeGreaterThanOrEqual(controls.y+controls.height);
     await drawing.screenshot({path:`test-results/${slug}-diagram-${width}.png`});
+  }
+});
+
+test('concept explanations precede prediction and remain readable without JavaScript',async({browser})=>{
+  const context=await browser.newContext({javaScriptEnabled:false,baseURL:test.info().project.use.baseURL});
+  const page=await context.newPage();
+  for(const width of [1440,390,320]){
+    await page.setViewportSize({width,height:1000});
+    const captured=new Set();
+    for(const lab of labs){
+      await page.goto(`${lab.slug}.html`);
+      const figure=page.locator('.concept-figure'),image=figure.getByRole('img');
+      await expect(figure).toHaveCount(1);
+      await expect.poll(()=>image.evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
+      const src=await image.getAttribute('src'),id=src.match(/\/([a-zA-Z]+)\.svg$/)[1];
+      await expect(image).toHaveAccessibleName(concepts[id].alt);
+      const chosen=await image.evaluate(img=>img.currentSrc);
+      expect(chosen.endsWith(`${id}${width<=600?'-mobile':''}.svg`)).toBe(true);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+      const prediction=page.locator('h2').filter({hasText:/^Predict/}).first();
+      expect(await figure.evaluate((el,id)=>Boolean(el.compareDocumentPosition(document.getElementById(id))&Node.DOCUMENT_POSITION_FOLLOWING),await prediction.getAttribute('id'))).toBe(true);
+      if(width!==320&&!captured.has(id)){
+        const bounds=await figure.boundingBox();
+        await page.setViewportSize({width,height:Math.max(1000,Math.ceil(bounds.height+240))});
+        await figure.evaluate(el=>window.scrollBy(0,el.getBoundingClientRect().y-100));
+        await figure.screenshot({path:`test-results/concept-${id}-${width}.png`});captured.add(id);
+        await page.setViewportSize({width,height:1000});
+      }
+      if((width===1440&&lab.slug==='wal')||(width===390&&lab.slug==='mvcc')){
+        await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:`test-results/concept-page-${lab.slug}-${width}.png`,fullPage:true});
+      }
+    }
+  }
+  await context.close();
+});
+
+test('concept SVG labels fit their nodes and responsive panels',async({page})=>{
+  for(const id of Object.keys(concepts))for(const mobile of [false,true]){
+    const svg=await readFile(`dist/concepts/${id}${mobile?'-mobile':''}.svg`,'utf8');
+    await page.setContent(`<style>body{margin:0}svg{display:block;width:${mobile?344:688}px}</style>${svg}`);
+    const problems=await page.locator('svg').evaluate(svg=>{
+      const problems=[];
+      for(const group of svg.querySelectorAll('.box')){
+        const r=group.querySelector('rect').getBBox();
+        for(const text of group.querySelectorAll('text')){
+          const b=text.getBBox();
+          if(b.x<r.x||b.x+b.width>r.x+r.width+1||b.y<r.y||b.y+b.height>r.y+r.height+1)problems.push(`Node overflow: ${text.textContent}`);
+        }
+      }
+      for(const panel of svg.querySelectorAll(':scope > g')){
+        const bounds=panel.getBBox();
+        if(bounds.x<0||bounds.x+bounds.width>321)problems.push(`Panel overflow: ${panel.textContent}`);
+      }
+      return problems;
+    });
+    expect(problems,`${id}${mobile?' mobile':''}`).toEqual([]);
   }
 });

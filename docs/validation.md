@@ -34,7 +34,7 @@ requires evidence and additional failure analysis, not a preset completion click
   and model semantics, including all 512 three-node directed graphs, every repaired
   log-engine crash prefix, and six core implementation contracts and the optional ARIES contract; three Python test
   methods including all native protocol boundaries and repeated replay.
-- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: thirteen browser journeys
+- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: fifteen browser journeys
   covering all 28 generated pages, scenario changes, crash/recovery, SQL errors
   and reset, exported evidence, persisted notes, keyboard and mobile layout.
   The added journeys execute all seven learner-code benches, check edge-case feedback,
@@ -117,3 +117,27 @@ Diagrams use the exact reference-model snapshot and do not claim real disk or
 cluster execution. Chapter prompts explain how each drawing relates to the
 mechanism and the evidence the learner should inspect; the optional ARIES
 drawing remains in the advanced lab.
+
+## Concept illustration review
+
+The concept-first revision adds 20 original annotated illustrations across all
+24 core investigations and optional A1. Each appears before prediction and code
+execution. These static examples teach the components and causal relationships;
+the existing live diagrams remain within the experiment as inspectable evidence.
+Captions distinguish boundaries and failure assumptions, including old snapshot
+visibility, cross-row dependency cycles, log-before-page vs commit-before-ack,
+prepared promises vs final decisions, and transaction history vs CLR skip links.
+
+Browser checks open all investigations with JavaScript disabled at 1440px, 390px
+and 320px. They verify that each illustration loads, has descriptive alternative
+text, precedes prediction, selects the correct responsive SVG and does not widen
+the page. A second check measures labels inside every node and panel in all 40
+SVG assets. Review fixes included three overflowing node labels, larger mobile
+text, stacked mobile panels and the local server's missing SVG MIME type.
+
+Desktop and mobile figure captures are saved as `concept-<id>-1440.png` and
+`concept-<id>-390.png`. Full-page WAL desktop and MVCC mobile captures show the
+reading sequence. Screenshot viewports expand around tall figures so fixed
+navigation cannot cover their headings. The diagrams do not depend on interaction
+or claim to represent a selected execution. Cross-browser and assistive-technology
+review beyond Chromium remains unverified.

@@ -4,6 +4,8 @@ Both participants vote yes. One learns commit. The other only sees a timeout. Ma
 
 **You will:** Trace prepare and commit records, explain two-phase commit blocking, and recover a known decision. **Prerequisites:** durable logging and recovery. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: twoPhase -->
+
 ## Predict before running
 
 If A has committed while B is prepared, may B abort just because the coordinator is unreachable? What can B actually infer from the timeout?

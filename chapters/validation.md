@@ -4,6 +4,8 @@ Optimistic concurrency lets a transaction do tentative work before deciding whet
 
 **You will:** build read/write sets, compare observed and current versions, and explain why write-conflict checking alone permits write skew. **Prerequisites:** snapshots and the doctor-roster invariant. **Runtime:** an executable optimistic concurrency control (OCC) engine over two keys.
 
+<!-- concept: validation -->
+
 ## Predict
 
 T1 reads A and B and writes A. T2 reads A and B and writes B. If validation checks only the rows each transaction writes, which invalidated observations are missed?

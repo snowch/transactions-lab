@@ -22,7 +22,10 @@ SQL pages run genuine PostgreSQL through self-hosted PGlite/WASM. Controlled
 JavaScript models expose state transitions and invariants; they explicitly say
 what they assume and do not claim live cluster or disk execution. Native Python
 and independent-session PostgreSQL extensions take selected cases to real systems.
-Live diagrams follow each selected trace state: tuple-version chains, wait graphs,
+Twenty annotated concept diagrams introduce the mechanisms across all 25 core
+and optional investigations before the prediction prompts. They explain the
+components, dependencies, failure cases and guarantees without running code.
+Live diagrams then follow each selected trace state: tuple-version chains, wait graphs,
 WAL durability, replica prefixes and ARIES undo links. Mechanism source is extracted
 from the engine that runs each trace. Implementation
 benches accept JavaScript functions and report named edge cases; code and evidence

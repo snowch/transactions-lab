@@ -4,6 +4,8 @@
 
 **You will:** trace shared/exclusive compatibility and upgrades, build a wait-for graph, and implement cycle detection. **Prerequisites:** transaction lifetime and directed graphs; the graph traversal is introduced below. **Runtime:** an executable lock table and request queues.
 
+<!-- concept: locks -->
+
 ## Predict
 
 A and B both hold shared locks on bike. Each now requests an exclusive lock on the same key. Does owning a shared lock give either permission to upgrade immediately?

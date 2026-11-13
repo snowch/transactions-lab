@@ -4,6 +4,8 @@ An UPDATE can create a new row version while an older transaction keeps reading 
 
 **You will:** evaluate xmin/xmax against snapshot membership and transaction status, trace an update's version chain, and identify versions vacuum must retain. **Prerequisites:** transaction descriptors and sets/maps. **Runtime:** a small executable version store; PostgreSQL has additional visibility rules.
 
+<!-- concept: mvcc -->
+
 ## Predict
 
 A reader starts before a writer commits an update from 100 to 70. After commit, are both stored versions still needed? Is “the creator has committed now” enough to make the new version visible to the old reader?

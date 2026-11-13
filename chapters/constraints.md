@@ -4,6 +4,8 @@ Two customers see one bicycle. Move the availability decision into the same atom
 
 **You will:** combine a conditional update, a reservation row and database constraints. **Prerequisites:** transaction boundaries. **Runtime:** real PostgreSQL, one connection. The next lab controls the competing-client schedule.
 
+<!-- concept: reservation -->
+
 ## Predict
 
 If both requests read stock = 1 before either writes, why might both applications decide they can reserve it? Can a CHECK on nonnegative stock enforce the identity and existence of every reservation?

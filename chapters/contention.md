@@ -4,6 +4,8 @@ A single lock makes the service easy to reason about. It also makes independent 
 
 **You will:** Compare lock granularity under explicit assumptions and preserve the scope of the invariant while improving concurrency. **Prerequisites:** locks and invariants. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: contention -->
+
 ## Predict before running
 
 Eight requests each need three logical service ticks. With one global slot, how many ticks are required? What changes if four independent keys can proceed together?

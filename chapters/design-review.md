@@ -10,6 +10,8 @@ Design a bicycle checkout that reserves a bicycle and helmet, charges a customer
 
 Write the customer promise before choosing isolation or a messaging mechanism. Decide whether a failed payment releases stock immediately, eventually or through a manual exception path.
 
+<!-- concept: design -->
+
 ## Predict
 
 Before reopening a model, predict the result of removing the consumer inbox while keeping the outbox. Will the order count, delivery count and dispatch-effect count tell the same story? Write your reasoning, then use the replay case to identify which extra failure test your implementation needs.

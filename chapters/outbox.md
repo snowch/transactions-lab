@@ -4,6 +4,8 @@ An order is paid in the database, but its dispatch event never appears. Move the
 
 **You will:** Make a durable event intent atomic with a local state change and distinguish eventual delivery from exactly-once effects. **Prerequisites:** local transactions, recovery and retries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: outbox -->
+
 ## Predict before running
 
 If the application commits paid status before publishing, what does a crash between those steps leave? Does publishing first remove the problem or move it?

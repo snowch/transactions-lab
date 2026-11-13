@@ -9,6 +9,11 @@ workflows. An exported design record connects the experiments.
 
 - `scripts/catalog.mjs` owns navigation and runtime classification.
 - `chapters/*.md` contains all prose, executable SQL, predictions and transfer tasks.
+- `chapters/concepts.mjs` contains original conceptual illustration narratives and
+  drawing data. Explicit markers in each chapter place them before prediction.
+- `scripts/concept-diagrams.mjs` renders the illustrations at build time as paired
+  desktop/mobile SVGs with accessible text; no browser code or external renderer
+  is needed to read them.
 - `scripts/build.mjs` renders static HTML, editable SQL, model controls and notebook
   fields. Vite bundles all runtime assets under relative URLs for Pages.
 - `web/db-worker.js` executes genuine PGlite SQL. One private database per SQL page;
@@ -117,3 +122,24 @@ attempt's recorded versions. No animation invents intermediate transitions.
 Execution controls remain sticky within the experiment. Wide SVGs scroll inside
 their container at very narrow widths; summaries and internal tables provide
 the same evidence as text.
+
+## Explain before executing
+
+Every core and optional investigation begins with a concept illustration. Twenty
+illustrations explain transaction boundaries and publication, conditional writes,
+MVCC, lost updates, write skew, validation, waits/deadlocks, retries, contention,
+file persistence, WAL ordering, redo/undo, 2PC, replicated decisions, outboxes,
+idempotency, sagas, design boundaries and advanced ARIES compensation.
+
+Each pairs two annotated views: the components or failure, then the mechanism
+or contrasting guarantee. Captions define how to read the arrows, state the
+causal lesson and identify important limits. These authored examples are distinct
+from the live reference-model projections and never count as executed evidence.
+The sequence is concept → prediction → experiment → implementation/explanation.
+Existing transfer tasks still require new reasoning rather than copying a figure.
+
+SVG text and geometry are authored from curriculum data. Narrow screens stack
+the panels, with larger text, instead of shrinking a wide diagram into illegibility.
+Images have descriptive alternatives and links to standalone SVGs. Static output
+works without JavaScript and under the GitHub Pages subpath. The local development
+server now serves SVGs with the image/svg+xml MIME type.

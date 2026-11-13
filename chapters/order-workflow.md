@@ -4,6 +4,8 @@ One bicycle, competing reservations, an uncertain payment, and a relay that can 
 
 **You will:** Design a reservation/payment/dispatch boundary and verify each resource independently under failures. **Prerequisites:** all five earlier parts. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: design -->
+
 ## Predict before running
 
 List the database, payment service, broker and dispatch consumer. Which of them share a local transaction? Which identities have to survive retries and restarts?

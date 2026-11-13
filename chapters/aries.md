@@ -4,6 +4,8 @@
 
 **You will:** reconstruct transaction and dirty-page tables, repeat history, generate redo-only compensation log records, and follow undoNextLSN across repeated failures. **Prerequisites:** [Build log recovery](./recovery-engine.html), [Crash during recovery](./recovery.html), pageLSN/recLSN and per-transaction prevLSN chains. **Runtime:** an executable ARIES recovery core with controlled failures and an implementation bench.
 
+<!-- concept: aries -->
+
 ## Predict
 
 A loser increases B by 5. Recovery subtracts 5 and flushes that page, then crashes. Which durable record tells the next restart that this original increase has already been compensated? Why is the next record to undo sometimes different from the newest record's prevLSN?

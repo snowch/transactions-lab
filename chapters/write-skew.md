@@ -4,6 +4,8 @@ Each doctor sees someone else on call. Both leave. Every row update succeeds, an
 
 **You will:** Distinguish a stable snapshot from serializability and identify a cross-row read/write dependency. **Prerequisites:** lost updates and transaction boundaries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: writeSkew -->
+
 ## Predict before running
 
 A and B both read two available doctors, then update different rows. Will avoiding a same-row write conflict preserve “at least one doctor stays”?

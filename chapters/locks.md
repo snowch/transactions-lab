@@ -4,6 +4,8 @@ A holds the bicycle. B holds the helmet. Each needs the other item before it can
 
 **You will:** Construct a wait-for cycle, distinguish blocking from deadlock, and remove the cycle through consistent acquisition order. **Prerequisites:** concurrent transactions. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: locks -->
+
 ## Predict before running
 
 If A acquires bike then helmet and B acquires helmet then bike, can either complete? Would a longer timeout solve the cycle?

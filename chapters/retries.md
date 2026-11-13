@@ -4,6 +4,8 @@ The database rejects an unsafe attempt. Your retry can still break the business 
 
 **You will:** Specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** write skew and aborts. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
+<!-- concept: retry -->
+
 ## Predict before running
 
 A sees two doctors and decides to leave. B leaves first. If A starts a new transaction but retries only its old write, is the database error handling enough?

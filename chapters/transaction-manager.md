@@ -4,6 +4,8 @@ BEGIN does not make a sequence of arbitrary writes indivisible. Something inside
 
 **You will:** implement publication of a write set, trace commit and abort state transitions, and explain which guarantees this mechanism does and does not provide. **Prerequisites:** invariants and basic objects/maps. **Runtime:** an executable single-writer engine, followed by a JavaScript implementation bench.
 
+<!-- concept: publication -->
+
 ## Predict
 
 Alice and Bob each have 100. The writer stages Alice = 70 before staging Bob = 130. Where can those intermediate values live without another reader seeing half a transfer?
