@@ -1,0 +1,37 @@
+# Retry the whole decision.
+
+The database rejects an unsafe attempt. Your retry can still break the business rule if it reuses the observation that caused the attempt.
+
+**You will:** Specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** write skew and aborts. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+## Predict before running
+
+A sees two doctors and decides to leave. B leaves first. If A starts a new transaction but retries only its old write, is the database error handling enough?
+
+## Control the experiment
+
+Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+
+<!-- experiment -->
+
+## Inspect the evidence
+
+Trace the observation, competing commit and validation failure. In the baseline, A abandons the failed transaction but keeps the stale application decision. Watch the final onCall value. The repaired run rereads after the conflict and decides to stay.
+
+## Change one thing
+
+Compare the observation and attempt count in both scenarios. Sketch a retry loop that catches retryable failures, rolls back, waits with bounded jitter, starts a fresh transaction and reruns all decision reads. Include a maximum retry budget; indefinite retries are not a liveness guarantee.
+
+Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+
+<details><summary>Hint 1 · Follow the state</summary><p>List the values computed before the failed UPDATE. Which of them depended on a snapshot that is no longer valid?</p></details>
+<details><summary>Hint 2 · Locate the boundary</summary><p>A retry callback must not send an email or initiate a new payment on each attempt unless that effect has its own stable identity and recovery strategy.</p></details>
+<details><summary>Worked explanation</summary><p>A serialization failure protects the aborted attempt. It cannot repair a stale decision retained in application memory. The repaired transaction reevaluates the business predicate with fresh state. Retry the complete decision and all its local writes, while classifying errors: sold out, a unique-key conflict and a transient serialization failure do not necessarily mean the same thing.</p></details>
+
+## Transfer the idea
+
+A transfer service calculates a currency quote before opening the transaction. Decide whether a retry can reuse it, whether it has an expiry, and which account/limit checks must be repeated. Specify what the client sees when retries are exhausted.
+
+**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+
+**Primary reference:** [PostgreSQL serialization failure handling](https://www.postgresql.org/docs/current/mvcc-serialization-failure-handling.html).

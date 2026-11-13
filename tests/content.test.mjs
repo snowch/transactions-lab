@@ -1,0 +1,26 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile,access} from 'node:fs/promises';
+import {resolve,dirname} from 'node:path';
+import {labs,pages} from '../scripts/catalog.mjs';
+import {definitions} from '../web/models.js';
+test('all investigations offer experiment, feedback, transfer and design record',async()=>{
+  assert.equal(labs.length,18);
+  for(const lab of labs){
+    const source=await readFile(lab.file,'utf8'),html=await readFile(`dist/${lab.slug}.html`,'utf8');
+    assert.match(source,/Transfer the idea/);assert.match(source,/<details>/);assert.match(html,/data-note="invariant"/);
+    if(lab.model){assert.ok(definitions[lab.model]);assert.match(html,/class="experiment"/);assert.ok(!html.includes('<!-- experiment -->'));}
+    assert.ok(source.length>1500,`${lab.slug}: substantive investigation`);
+  }
+});
+test('every generated local page and download link resolves, including fragments',async()=>{
+  for(const page of pages){
+    const html=await readFile(`dist/${page.slug}.html`,'utf8');
+    for(const [,link] of html.matchAll(/(?:href|src)="([^"?#]+(?:#[^"]*)?)"/g)){
+      if(/^(https?:|data:)/.test(link))continue;
+      const [path,fragment]=link.split('#');const target=resolve('dist',path||`${page.slug}.html`);
+      await access(target);
+      if(fragment){const destination=await readFile(target,'utf8');assert.ok(destination.includes(`id="${fragment}"`),`${page.slug}: ${link}`);}
+    }
+  }
+});

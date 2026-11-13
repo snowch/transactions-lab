@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: transactions
+      POSTGRES_PASSWORD: local-lab-only
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d transactions']
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    # No ports are published. Use docker compose exec for this disposable lab.
