@@ -29,6 +29,8 @@ Inspect each transaction's snapshot, read versions and staged writes. The baseli
 
 <!-- experiment -->
 
+The diagram separates recorded read versions and private writes, then shows the exact tested-versus-current comparison from the most recent validation event. It does not judge an already committed read against unrelated future changes.
+
 ## Read and implement the validator
 
 The predicate below is the one the engine invokes. The surrounding engine determines which versions are supplied and makes checking plus publication one event; a correct predicate cannot compensate for an incomplete read set or an unsafe publication boundary.

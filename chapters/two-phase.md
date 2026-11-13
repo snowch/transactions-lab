@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+The diagram separates the coordinator’s durable global decision from the decision each participant has actually received. A prepared B remains labelled as holding resources while its decision-delivery edge is pending.
+
 ## Inspect the evidence
 
 Step through durable prepare, the coordinator’s durable COMMIT, A’s notification and the lost connection to B. Prepared means B has promised it can commit later and must retain recoverable state; it is not a commit visible to the application.

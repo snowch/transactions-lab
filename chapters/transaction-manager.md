@@ -31,6 +31,8 @@ Step the baseline. The writer exposes Alice immediately, and the next observatio
 
 <!-- experiment -->
 
+The diagram separates the private write set from public values. Step across publication and watch which store changes; the arrows show the model’s publication path, not disk persistence.
+
 Select Repair. Watch the tentative values accumulate separately from public data. The transaction passes through committing before publication. Try the abort scenario; the staged debit disappears without changing the public map.
 
 ## Read the algorithm

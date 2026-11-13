@@ -194,3 +194,48 @@ test('optional ARIES lab exposes both CLR pointers and survives multiple interru
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'test-results/aries-mobile.png',fullPage:true});
 });
+
+test('live diagrams follow execution, scenario changes and selected history without stale data',async({page})=>{
+  await page.goto('mvcc.html');
+  await expect(page.locator('.mechanism-visual figure')).toBeVisible();
+  await expect(page.locator('.diagram-summary')).toContainText('Begin the reader');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.version-node[data-visible=true]')).toHaveCount(0);
+  await expect(page.locator('.diagram-note')).toContainText('Vacuum removed: v0');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.version-node[data-visible=true]')).toContainText('value 100');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('new-snapshot');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.version-node[data-visible=true]')).toContainText('value 70');
+  await page.locator('.config-panel summary').click();await page.getByRole('textbox',{name:'Experiment configuration'}).fill('{invalid');
+  await expect(page.locator('.mechanism-visual')).toBeHidden();
+  await page.goto('lock-manager.html');await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.mechanism-visual svg')).toHaveAccessibleName('Wait-for graph');
+  await expect(page.locator('.mechanism-visual .graph-outcome')).toHaveText('Cycle detected');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.mechanism-visual .graph-outcome')).toHaveText('No cycle');
+  await page.goto('recovery-engine.html');await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  const target=page.locator('.trace button').filter({hasText:'Flush alice without enforcing'});await target.click();
+  await expect(page.locator('.diagram-summary')).toContainText('alice is ahead');
+  await expect(page.locator('.mechanism-visual .diagram-block.danger')).toContainText('pageLSN 2');
+  await page.getByRole('button',{name:'Crash & recover here',exact:true}).click();
+  await expect(page.locator('.log-record')).toHaveCount(0);
+});
+
+test('diagrams remain readable at narrow widths and controls stay available while inspecting them',async({page})=>{
+  for(const [slug,width] of [['mvcc',390],['lock-manager',320],['aries',390],['replicated-log',390],['two-phase',390],['recovery-engine',1440]]){
+    await page.setViewportSize({width,height:1200});await page.goto(`${slug}.html`);
+    await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption(slug==='lock-manager'?'broken':'repaired');
+    await page.getByRole('button',{name:'Run to end',exact:true}).click();
+    const drawing=page.locator('.mechanism-visual');await expect(drawing).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await drawing.scrollIntoViewIfNeeded();
+    const bounds=await drawing.boundingBox();
+    const sticky=await page.locator('.experiment-console').evaluate(el=>({top:parseFloat(getComputedStyle(el).top),height:el.getBoundingClientRect().height}));
+    await page.evaluate(delta=>window.scrollBy(0,delta),bounds.y-sticky.top-sticky.height-16);
+    const controls=await page.locator('.experiment-console').boundingBox();expect(controls.y).toBeGreaterThanOrEqual(64);expect(controls.y).toBeLessThan(120);
+    expect((await drawing.boundingBox()).y).toBeGreaterThanOrEqual(controls.y+controls.height);
+    await drawing.screenshot({path:`test-results/${slug}-diagram-${width}.png`});
+  }
+});

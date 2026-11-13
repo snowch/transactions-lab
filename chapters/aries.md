@@ -40,6 +40,8 @@ Run the baseline and inspect the two restart passes. The first pass compensates 
 
 <!-- experiment -->
 
+The drawing follows the recovery phase and the newest CLR. Its two arrows point to the actual prevLSN and undoNextLSN records; the faulty policy highlights the transaction-order path, while the repaired policy highlights the rollback skip path. The caption says whether that CLR is durable or still buffered.
+
 Select Repair. The first CLR skips directly to the predecessor of the update it compensated. Inspect the log table's separate prevLSN, undoNextLSN and Compensates columns; The log view follows the latest records; scroll up for earlier history and horizontally for additional columns on a narrow screen. The check counts **durable** CLRs, since a buffered record can be lost without having published its recovery action.
 
 ## A CLR is a new forward log action

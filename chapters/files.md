@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+The three stores in the drawing are distinct: buffered contents, the currently visible target, and durable replacement metadata/data. Follow each fsync and rename event instead of treating “new is visible” as proof that all persistence work finished.
+
 ## Inspect the evidence
 
 Step to the rename in the baseline. Crash and recover there. The simplified durable namespace still points to old. Run to acknowledgement and crash again: the durability check fails, even though a complete file was visible before the crash. Each crash inspection starts from the selected step; it does not erase the original trace.

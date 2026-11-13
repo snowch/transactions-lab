@@ -25,6 +25,8 @@ Both shared requests are granted. Each upgrade is queued because the other trans
 
 <!-- experiment -->
 
+The wait-for drawing uses directed arrows from each waiting transaction to its blockers. Step through both upgrades and the detector: the cycle appears before the victim aborts, then disappears when its ownership and queued request are removed.
+
 Repair chooses the youngest participant in a detected cycle, aborts it, removes its queued and held locks, and wakes the surviving upgrade. Observe the resulting X owner and the emptied queue. Victim choice affects wasted work and fairness; it does not change the definition of a cycle.
 
 ## The detector algorithm

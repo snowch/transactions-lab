@@ -30,11 +30,11 @@ requires evidence and additional failure analysis, not a preset completion click
 
 ## Checks executed
 
-- `npm run check`: static build; 92 Node checks for content, local links, real SQL
+- `npm run check`: static build; 98 Node checks for content, local links, real SQL
   and model semantics, including all 512 three-node directed graphs, every repaired
   log-engine crash prefix, and six core implementation contracts and the optional ARIES contract; three Python test
   methods including all native protocol boundaries and repeated replay.
-- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: eleven browser journeys
+- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: thirteen browser journeys
   covering all 28 generated pages, scenario changes, crash/recovery, SQL errors
   and reset, exported evidence, persisted notes, keyboard and mobile layout.
   The added journeys execute all seven learner-code benches, check edge-case feedback,
@@ -96,3 +96,24 @@ The model has full-transaction rollback on disjoint fixed pages and an atomic
 checkpoint snapshot; it does not claim full fuzzy-checkpoint merging, savepoints,
 nested top actions, logical index undo or media recovery. Primary references are
 the original Mohan et al. paper and Apache Derby's implementation explanation.
+
+## Live diagram review
+
+Reviewed MVCC, wait-for graphs, ARIES CLR links, replica lanes and 2PC at 390px
+(320px for the wait graph), plus the WAL buffer/disk view at 1440px. Component
+screenshots use a taller viewport to show the complete diagram below the sticky
+execution controls. Captures include `mvcc-diagram-390.png`,
+`lock-manager-diagram-320.png`, `aries-diagram-390.png`,
+`replicated-log-diagram-390.png`, `two-phase-diagram-390.png` and
+`recovery-engine-diagram-1440.png`. Arrow labels and directions are readable;
+SVGs can scroll horizontally inside the narrowest page without widening it.
+Text labels distinguish visible, durable and committed state without color alone.
+
+Six semantic checks verify visibility/retention, dependency cycles, unsafe WAL
+ordering, both CLR targets, per-node committed prefixes, participant knowledge
+and projection purity. Two browser journeys check selected history, crash states,
+scenario changes, stale-input invalidation, mobile overflow and sticky controls.
+Diagrams use the exact reference-model snapshot and do not claim real disk or
+cluster execution. Chapter prompts explain how each drawing relates to the
+mechanism and the evidence the learner should inspect; the optional ARIES
+drawing remains in the advanced lab.

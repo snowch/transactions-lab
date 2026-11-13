@@ -28,6 +28,8 @@ The reader receives ID 1 and pins a snapshot. The writer receives ID 2. UPDATE m
 
 <!-- experiment -->
 
+The version chain outlines the tuple visible to the selected snapshot and labels every hidden version. In the Read Committed scenario, the drawing explicitly projects a fresh statement’s view from the current state. Follow xmin/xmax and compare the selected tuple with the retained version table.
+
 The baseline vacuum keeps only what a new reader sees, removing v0 too early. The old reader then has no visible row. Repair retains versions visible to the pinned snapshot and versions belonging to active creators. Try new-snapshot: Read Committed obtains a fresh snapshot per statement and can read 70 after the writer commits.
 
 ## Inspect and implement visibility

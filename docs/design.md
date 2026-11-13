@@ -17,6 +17,8 @@ workflows. An exported design record connects the experiments.
   recovery functions. Every UI trace comes from those transitions.
 - `web/experiments.js` manages stepping, revisiting prefixes, recovery, config
   validation feedback, local drafts and evidence exports. No backend is needed.
+- `web/diagrams.js` projects model snapshots into live diagrams without mutating
+  the model. Diagrams, internal tables and raw snapshots share the selected state.
 - `native/` and `server/` contain runnable real-system extensions copied into downloads.
 
 ## What makes this a lab
@@ -96,3 +98,22 @@ CLR prevLSN traversal. The optional implementation bench tests the proper chain
 rule, including undoNextLSN = 0. Checkpoint metadata is one atomic snapshot and
 transactions own disjoint pages. The chapter explains which full ARIES features
 are omitted and supplies advanced extension tasks rather than claiming them.
+
+## Live mechanism diagrams
+
+Version chains identify the tuple visible to the reader; directed graphs expose
+blocking and read/write dependencies; log strips and buffer/disk pairs distinguish
+buffered records from durable state. Replica lanes use each node's commitIndex,
+and 2PC distinguishes a stable coordinator decision from participant knowledge.
+The advanced ARIES diagram separates transaction-order prevLSN from undoNextLSN
+and the compensated UPDATE. Text labels accompany color and SVG arrows.
+
+Initial diagrams preview the unexecuted state without creating execution evidence.
+Stepping, selecting an earlier prefix, running and crashing redraw the diagram;
+editing inputs hides stale diagrams until execution or preset restoration.
+Read Committed explicitly labels its projected fresh statement view; Repeatable
+Read uses the pinned snapshot. Validation comparisons use the actual commit
+attempt's recorded versions. No animation invents intermediate transitions.
+Execution controls remain sticky within the experiment. Wide SVGs scroll inside
+their container at very narrow widths; summaries and internal tables provide
+the same evidence as text.

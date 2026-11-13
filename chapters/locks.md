@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+Follow the directed wait-for arrows. One blocked request adds an edge; opposite resource acquisition closes a cycle. Ownership labels below the graph show the resources creating the wait.
+
 ## Inspect the evidence
 
 Step through the ownership and waiting maps. An edge A → B means A needs a resource held by B. A single wait is ordinary contention; the two-edge cycle is a deadlock. The red check concerns progress, not evidence of a corrupt committed row.

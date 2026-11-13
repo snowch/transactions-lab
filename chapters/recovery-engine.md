@@ -31,6 +31,8 @@ In the baseline, step to Flush alice and crash before the checkpoint. The disk c
 
 <!-- experiment -->
 
+The log strip distinguishes durable records from buffered records. Below it, buffer and disk pages display their actual pageLSNs. An unsafe disk page is marked when it gets ahead of the durable log. These are logical record positions, not measured I/O time or byte widths.
+
 Repair flushes Alice's log dependency before its page. Crash after that flush: recovery finds no COMMIT, classifies T1 as a loser and restores its before-image. Run to COMMIT and crash: recovery finds a winner, redoes the missing Bob page and preserves the transfer. The loser scenario checkpoints an active transaction; the checkpoint does not commit it.
 
 ## Restart in three phases

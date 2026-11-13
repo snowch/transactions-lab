@@ -24,6 +24,8 @@ The baseline acknowledges a local-only COMMIT, then loses A. B and C can elect B
 
 <!-- experiment -->
 
+Each replica has its own log lane. Entry labels distinguish locally stored entries from that node’s committed prefix; a down node keeps its stable log in the picture. Compare the lanes through the election and prefix-repair events.
+
 In Repair, A first replicates COMMIT to B and commits it through a majority. After A becomes unavailable, B wins an up-to-date election. C initially rejects the assumed prefix, so B backs up and sends COMMIT plus its current-term NOOP. The new majority commits the prefix; the original decision remains recoverable.
 
 ## Inspect and implement the election rule

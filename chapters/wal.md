@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+The drawing separates after-images, the commit marker and current disk values. A durable log record and an installed data page are different facts; step through the point where recovery gains enough information to finish the pair.
+
 ## Inspect the evidence
 
 In the in-place baseline, step to Alice’s installation and crash. The disk contains 70 and 100: neither a complete old nor a complete new transfer. The recovered invariant check should fail. Running to the end without a crash hides this failure.

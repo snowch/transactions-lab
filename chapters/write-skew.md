@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+The dependency drawing distinguishes a committed dependency graph from the rejected candidate graph. A rejected cycle is labelled as rejected; it is not presented as a cycle in the repaired committed history.
+
 ## Inspect the evidence
 
 The initial roster has A and B. Step through both reads before either write. Each decision is locally reasonable. Check the roster after each commit and identify which earlier observation the other transaction invalidated.

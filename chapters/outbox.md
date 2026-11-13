@@ -14,6 +14,8 @@ Use **Step** to reveal one state transition, or **Run to end** to inspect the fu
 
 <!-- experiment -->
 
+The drawing separates the local order, durable publication intent and broker publication count. The absent-intent case exposes the recovery gap, while repeated publication remains visible even when there is just one order.
+
 ## Inspect the evidence
 
 Run the dual-write baseline. The paid order survives without any durable event intent. Run the outbox repair: paid status and an event record survive together. A restarted relay can find the remaining work. Its progress marker is a separate failure boundary.
