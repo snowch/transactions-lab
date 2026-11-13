@@ -7,6 +7,7 @@ function setNavigation(open) {
   menu.setAttribute('aria-expanded', String(open));
   document.body.classList.toggle('nav-open', open);
   sidebar.inert = !open;
+  document.querySelector('main').inert = open&&!wide.matches;
   if (open) sidebar.querySelector('[aria-current="page"]')?.scrollIntoView({block:'nearest'});
 }
 setNavigation(wide.matches);

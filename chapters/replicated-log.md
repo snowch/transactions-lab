@@ -2,7 +2,7 @@
 
 A coordinator's decision can survive its current leader only if the protocol preserves the record through replication and future elections. Trace the entries and votes that make that possible.
 
-**You will:** inspect term/index pairs, implement election log comparison, trace AppendEntries prefix matching, and locate quorum commit before acknowledgement. **Prerequisites:** two-phase commit and the consensus/commit distinction. **Runtime:** a three-node Raft-style log core with explicit send events.
+**You will:** inspect term/index pairs, implement election log comparison, trace AppendEntries prefix matching, and locate quorum commit before acknowledgement. **Prerequisites:** [consensus versus atomic commit](./consensus.html). **Runtime:** a three-node Raft-style log core with explicit send events.
 
 <!-- concept: replication -->
 
@@ -40,7 +40,7 @@ Expand the source to inspect actual vote, replication and commit-index calculati
 
 ## Change one thing
 
-Remove replicate:B before A's first ack. With the quorum policy the reply is withheld. Try missing-majority and explain the resulting progress limit. In the repaired schedule, replace elect:B with elect:C: B's more recent log should prevent C from winning that election, and subsequent leader-only operations must be rejected until a valid leader is elected.
+Remove replicate:B before A's first ack. With the quorum policy the reply is withheld. Try missing-majority and explain the resulting progress limit. To inspect a failed election, restore Repair, replace elect:B with elect:C, and end the schedule immediately after that election. Inspect the votes: B's more recent log prevents C from winning. Then append append:NOOP to that shortened schedule; Run reports an error because no live leader exists. A complete invalid schedule is rejected before the UI exposes its trace, so keep the valid prefix to inspect the election itself.
 
 <details><summary>Hint 1 · Separate local append from committed prefix</summary><p>An entry in one stable log has survived that node's process restart, but is not necessarily protected against replacement after a different majority elects a leader.</p></details>
 <details><summary>Hint 2 · Order election candidates by term, then index</summary><p>Do not compare array lengths first. Terms identify leadership epochs; only when last terms tie does the last index break the tie.</p></details>
@@ -49,5 +49,7 @@ Remove replicate:B before A's first ack. With the quorum policy the reply is wit
 ## Transfer the idea
 
 Place the two-phase coordinator's PREPARE and COMMIT records in this replicated log. Explain why preserving a recorded decision does not supply a missing participant YES vote. Then identify the atomicity boundary between a committed log entry and each participant's local data changes. Consensus replication and atomic commit solve connected but different problems.
+
+**Success criteria:** cite term/index pairs and actual votes; show withheld acknowledgement without a majority and the prefix-repair backtrack; pass the election comparison bench and separate committed coordinator history from participant commit.
 
 **Primary source:** [Ongaro and Ousterhout, In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf), especially the log replication and leader completeness rules.

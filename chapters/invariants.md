@@ -8,7 +8,7 @@ A transfer can preserve the total money and still pay the wrong person. Write th
 
 ## Predict
 
-Alice and Bob each start with 100. Alice asks to send Bob 30. What should each balance be? Is checking a total of 200 sufficient?
+Alice and Bob each start with 100. Alice asks to send Bob 30. Compare two possible final states: 70/130 and 50/150. Which conservation and nonnegative checks can distinguish them? Write a request-specific test before running the defective transfer.
 
 ## Inspect the initial state
 
@@ -61,5 +61,7 @@ The engine also tracks a transaction descriptor and its tentative effects. Atomi
 ## Transfer the idea
 
 Add a fee account. Define the conservation rule for a transfer of 30 with a fee of 2, stating who pays it. Write expected individual balances and a query that would catch a fee accidentally credited to Bob. Record which checks are enforced by the database and which your application or verifier must enforce.
+
+**Success criteria:** show a state that passes conservation but fails the requested transfer; submit a query checking both individual balances; distinguish an enforced constraint from an application postcondition.
 
 **Primary reference:** [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).

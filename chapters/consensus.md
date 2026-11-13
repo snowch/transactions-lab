@@ -2,13 +2,15 @@
 
 Replicating a coordinator can make a recorded decision more available. It cannot turn a missing participant vote into permission to commit.
 
-**You will:** Distinguish consensus over a decision log from atomic commit across resource owners. **Prerequisites:** two-phase commit. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Distinguish consensus over a decision log from atomic commit across resource owners. **Prerequisites:** [two-phase commit](./two-phase.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+A **quorum** is the required replica set for this exercise: a strict majority, `floor(replicas / 2) + 1`. Replica agreement concerns the decision log; participant YES/NO votes concern whether the resource owners can commit. The illustrated replication protocol is implemented in the next lab; this widget tests only the arithmetic and decision distinction.
 
 <!-- concept: replication -->
 
 ## Predict before running
 
-Three coordinator replicas have a quorum of two. If only one is reachable, can this model establish an authoritative decision? If two are reachable but a participant vote is missing, does the quorum supply that vote?
+With five coordinator replicas and three reachable, predict quorum and progress when a participant vote is missing. Then hold all votes YES and compare reachable = 2 with reachable = 3. Which single change affects agreement availability, and which affects commit validity?
 
 ## Control the experiment
 
@@ -22,7 +24,7 @@ Run the one-replica baseline. Inspect reachable and quorum. Select Repair: two r
 
 ## Change one thing
 
-Keep reachable = 2 but set decision = "unknown". Observe that quorum availability does not resolve the missing participant vote. Try no-vote: replication can make ABORT available too. Change replicas to 5 and predict the smallest reachable set that meets the majority requirement.
+Repair changes both reachable and decision. For a controlled availability comparison, start with replicas = 3 and decision = "commit" (all participant YES votes), varying only reachable from 1 to 2. Next hold reachable = 2 and vary only decision from commit to unknown: quorum availability cannot resolve a missing participant vote. Try no-vote to make ABORT available too. Test the five-replica predictions with decision held fixed while reachability changes.
 
 Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
 
@@ -40,6 +42,6 @@ The [next implementation lab](./replicated-log.html) exposes log index/term pair
 
 Compare two independent databases coordinated by an application with one replicated database spanning shards. Draw the resource owners and decision log. Identify where atomic commit and replication are needed and which failure prevents each from progressing.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** compute the majority for five replicas; vary reachability while holding participant votes fixed, then vary votes with quorum fixed; explain why neither a minority nor a missing participant vote authorizes COMMIT.
 
 **Primary reference:** [Gray and Lamport: Consensus on Transaction Commit](https://www.microsoft.com/en-us/research/publication/consensus-on-transaction-commit/).

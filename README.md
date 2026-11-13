@@ -54,6 +54,9 @@ Build output is `dist/`. All asset and page links support `/transactions-lab/`.
 GitHub Actions validates models, actual SQL, native exercises, browser behavior
 and shared-server schedules before deploying to GitHub Pages.
 
+[Whole-course learning-design and UX review](docs/course-review.md) records
+lesson-by-lesson findings, fixes, executed evidence and remaining limits.
+
 ## Real-system extensions
 
 [Server worksheet](server/README.md), [file replacement](native/files.py) and

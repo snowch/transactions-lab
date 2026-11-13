@@ -4,15 +4,17 @@
 
 **You will:** reconstruct transaction and dirty-page tables, repeat history, generate redo-only compensation log records, and follow undoNextLSN across repeated failures. **Prerequisites:** [Build log recovery](./recovery-engine.html), [Crash during recovery](./recovery.html), pageLSN/recLSN and per-transaction prevLSN chains. **Runtime:** an executable ARIES recovery core with controlled failures and an implementation bench.
 
+**ARIES** stands for *Algorithm for Recovery and Isolation Exploiting Semantics*. A **loser** is an unfinished transaction that recovery must roll back. A **compensation log record (CLR)** records an undo action that redo can repeat safely. Its prevLSN follows transaction history; undoNextLSN identifies remaining rollback work.
+
 <!-- concept: aries -->
 
 ## Predict
 
-A loser increases B by 5. Recovery subtracts 5 and flushes that page, then crashes. Which durable record tells the next restart that this original increase has already been compensated? Why is the next record to undo sometimes different from the newest record's prevLSN?
+Compare three interruptions: the CLR is still buffered; the CLR is durable but its page action is missing; both CLR and page are durable. For each, predict whether restart must redo compensation, generate it again, or skip it, and identify the next original UPDATE to undo. Distinguish record durability from page durability.
 
 ## From the foundation to ARIES
 
-The core recovery lab uses one writer and before-image undo. This optional lab adds interleaved transaction chains, multiple losers, compensation records and failures during rollback. **ARIES** stands for *Algorithm for Recovery and Isolation Exploiting Semantics*. Its central recovery sequence is analysis, repeat-history redo, then undo of unfinished work.
+The core recovery lab uses one writer and before-image undo. This optional lab adds interleaved transaction chains, multiple losers, compensation records and failures during rollback. Its recovery sequence is analysis, repeat-history redo, then undo of unfinished work.
 
 The model's pages A, B and C are independent counters starting at 100. T1 changes A by +10 and commits. T2 changes B by +20 and +5 but never commits. T3 changes C by +7 and never commits. Successful recovery must retain A = 110 and restore B = C = 100. Changes are interleaved in the log even though the transactions own different pages.
 
@@ -44,7 +46,7 @@ Run the baseline and inspect the two restart passes. The first pass compensates 
 
 The drawing follows the recovery phase and the newest CLR. Its two arrows point to the actual prevLSN and undoNextLSN records; the faulty policy highlights the transaction-order path, while the repaired policy highlights the rollback skip path. The caption says whether that CLR is durable or still buffered.
 
-Select Repair. The first CLR skips directly to the predecessor of the update it compensated. Inspect the log table's separate prevLSN, undoNextLSN and Compensates columns; The log view follows the latest records; scroll up for earlier history and horizontally for additional columns on a narrow screen. The check counts **durable** CLRs, since a buffered record can be lost without having published its recovery action.
+Select Repair. The first CLR skips directly to the predecessor of the update it compensated. Inspect the log table's separate prevLSN, undoNextLSN and Compensates columns. The log view follows the latest records; scroll up for earlier history and horizontally for additional columns on a narrow screen. The check counts **durable** CLRs, since a buffered record can be lost without having published its recovery action.
 
 ## A CLR is a new forward log action
 

@@ -8,6 +8,16 @@ const save=(value,name,type='application/json')=>{const url=URL.createObjectURL(
 for(const el of document.querySelectorAll('.experiment')){
   const id=el.dataset.model,config=el.querySelector('.config'),preset=el.querySelector('.preset'),status=el.querySelector('.model-status');
   let run=null,cursor=-1,recovery=null,submitted='',history=[];
+  const describeSettings=()=>{
+    const note=el.querySelector('.scenario-note');
+    try{
+      const input=JSON.parse(config.value),base=definitions[id].presets.broken;
+      if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Expected an object');
+      const changed=Object.keys({...base,...input}).filter(key=>JSON.stringify(base[key])!==JSON.stringify(input[key]));
+      note.dataset.changedFields=changed.join(',');
+      note.textContent=changed.length?`Changed from original baseline: ${changed.join(', ')}. ${changed.length>1?'Several settings changed; match inputs for a controlled comparison.':'Keep other inputs fixed when comparing outcomes.'}`:'Baseline settings. Inspect the configuration before comparing outcomes.';
+    }catch{note.dataset.changedFields='';note.textContent='Configuration is not readable yet. Run will report the input error.';}
+  };
   const invalidate=()=>{run=null;cursor=-1;recovery=null;submitted='';el.querySelector('.trace').replaceChildren();el.querySelector('.model-state').textContent='No execution yet.';el.querySelector('.checks').replaceChildren();el.querySelector('.internals-view').replaceChildren();el.querySelector('.mechanism-visual').replaceChildren();el.querySelector('.mechanism-visual').hidden=true;el.querySelector('.export-run').disabled=true;status.textContent='Settings changed. Make a prediction, then run the new configuration.';};
   const render=()=>{
     const step=recovery||run.steps[cursor];
@@ -34,12 +44,12 @@ for(const el of document.querySelectorAll('.experiment')){
   el.querySelector('.run-model').addEventListener('click',()=>execute(true));
   el.querySelector('.crash')?.addEventListener('click',()=>{try{if(!run)execute(false);if(!run)return;recovery=recoverModel(id,(recovery||run.steps[cursor]).state);history.push({atStep:cursor,...structuredClone(recovery)});render();}catch(error){status.textContent=error.message;}});
   const preview=()=>{try{const input=JSON.parse(config.value),initial=runModel(id,input).steps[0];renderDiagram(el.querySelector('.mechanism-visual'),id,initial.state,input);}catch{}};
-  const restore=()=>{config.value=JSON.stringify(definitions[id].presets[preset.value],null,2);history=[];invalidate();preview();};
+  const restore=()=>{config.value=JSON.stringify(definitions[id].presets[preset.value],null,2);history=[];invalidate();describeSettings();preview();};
   preset.addEventListener('change',restore);el.querySelector('.reset-model').addEventListener('click',restore);
-  config.addEventListener('input',()=>{history=[];invalidate();});
+  config.addEventListener('input',()=>{history=[];invalidate();describeSettings();});
   el.querySelector('.export-run').addEventListener('click',()=>{const record=evidence();records.push(record);save(record,`${page}-${preset.value}-run.json`);});
   el.evidence=evidence;
-  preview();
+  describeSettings();preview();
 }
 const notes=[...document.querySelectorAll('[data-note]')];
 let storageAvailable=true;

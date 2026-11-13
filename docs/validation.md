@@ -30,11 +30,11 @@ requires evidence and additional failure analysis, not a preset completion click
 
 ## Checks executed
 
-- `npm run check`: static build; 98 Node checks for content, local links, real SQL
+- `npm run check`: static build; 103 Node checks for content, local links, real SQL
   and model semantics, including all 512 three-node directed graphs, every repaired
   log-engine crash prefix, and six core implementation contracts and the optional ARIES contract; three Python test
   methods including all native protocol boundaries and repeated replay.
-- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: fifteen browser journeys
+- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: sixteen browser journeys
   covering all 28 generated pages, scenario changes, crash/recovery, SQL errors
   and reset, exported evidence, persisted notes, keyboard and mobile layout.
   The added journeys execute all seven learner-code benches, check edge-case feedback,
@@ -145,3 +145,13 @@ reading sequence. Screenshot viewports expand around tall figures so fixed
 navigation cannot cover their headings. The diagrams do not depend on interaction
 or claim to represent a selected execution. Cross-browser and assistive-technology
 review beyond Chromium remains unverified.
+
+## Whole-course review
+
+[The complete review](course-review.md) records the learning-design and UX pass
+for all 25 investigations and the supporting guides, with a lesson-by-lesson
+evidence matrix. It replaces generic assessment wording, makes counterfactual
+predictions testable, fixes controlled comparisons and executable instructions,
+keeps ARIES optional, and adds reader-history evidence. New UI checks cover
+multi-input preset differences and mobile background focus; no-JavaScript reading
+now explicitly distinguishes static explanations from executable activities.

@@ -110,8 +110,10 @@ test('keyboard navigation and narrow layout retain access to chapters and experi
   await page.keyboard.press('Enter');
   const menu=page.getByRole('button',{name:'Chapters',exact:true});await menu.click();
   await expect(menu).toHaveAttribute('aria-expanded','true');
+  await expect(page.locator('main')).toHaveAttribute('inert','');
   await expect(page.getByRole('link',{name:labs.find(l=>l.slug==='idempotency').title,exact:true})).toBeVisible();
   await page.keyboard.press('Escape');await expect(menu).toBeFocused();await expect(menu).toHaveAttribute('aria-expanded','false');
+  await expect(page.locator('main')).not.toHaveAttribute('inert','');
   await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
   await page.getByRole('button',{name:'Run to end',exact:true}).click();
   await page.getByRole('button',{name:'Crash & recover here',exact:true}).click();
@@ -250,6 +252,7 @@ test('concept explanations precede prediction and remain readable without JavaSc
     const captured=new Set();
     for(const lab of labs){
       await page.goto(`${lab.slug}.html`);
+      await expect(page.locator('.noscript-note')).toContainText('Enable JavaScript');
       const figure=page.locator('.concept-figure'),image=figure.getByRole('img');
       await expect(figure).toHaveCount(1);
       await expect.poll(()=>image.evaluate(img=>img.naturalWidth)).toBeGreaterThan(0);
@@ -299,4 +302,37 @@ test('concept SVG labels fit their nodes and responsive panels',async({page})=>{
     allProblems.push(...problems.map(problem=>`${id}${mobile?' mobile':''} (${font}): ${problem}`));
   }
   expect(allProblems).toEqual([]);
+});
+
+test('learners can identify a confounded preset and make a controlled comparison',async({page})=>{
+  await page.setViewportSize({width:390,height:844});await page.goto('lost-update.html');
+  const note=page.locator('.scenario-note');
+  await expect(note).toContainText('Baseline settings');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
+  await expect(note).toHaveAttribute('data-changed-fields','strategy,stock');
+  await expect(note).toContainText('Several settings changed');
+  await page.locator('.config-panel summary').click();
+  await page.getByRole('textbox',{name:'Experiment configuration'}).fill(JSON.stringify({...definitions['lost-update'].presets.repaired,stock:2}));
+  await expect(note).toHaveAttribute('data-changed-fields','strategy');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  const result=JSON.parse(await page.locator('.model-state').textContent());
+  expect(result.stock).toBe(0);expect(result.reservations).toBe(2);await expect(page.locator('.checks .fail')).toHaveCount(0);
+  await page.getByRole('textbox',{name:'Experiment configuration'}).fill('{');
+  await expect(note).toContainText('not readable');await expect(page.getByRole('button',{name:'Download run evidence'})).toBeDisabled();
+  await page.getByRole('button',{name:'Restore scenario'}).click();
+  await expect(note).toHaveAttribute('data-changed-fields','strategy,stock');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'test-results/course-comparison-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1440,height:1300});await page.goto('transaction-manager.html');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('abort');
+  await page.locator('.config-panel summary').click();
+  await page.getByRole('textbox',{name:'Experiment configuration'}).fill(JSON.stringify({...definitions['transaction-manager'].presets.abort,publication:'each-write'}));
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.checks .pass')).toContainText('public state');
+  await expect(page.locator('.checks .fail')).toContainText('every recorded reader');
+  const history=page.locator('.internals-view');await expect(history).toContainText('170');
+  await history.scrollIntoViewIfNeeded();
+  const sticky=await page.locator('.experiment-console').evaluate(el=>({top:parseFloat(getComputedStyle(el).top),height:el.getBoundingClientRect().height}));
+  await history.evaluate((el,offset)=>window.scrollBy(0,el.getBoundingClientRect().y-offset),sticky.top+sticky.height+16);
+  await history.screenshot({path:'test-results/reader-history-desktop.png'});
 });

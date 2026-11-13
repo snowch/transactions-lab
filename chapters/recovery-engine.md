@@ -2,13 +2,13 @@
 
 A buffer pool can write an uncommitted page before commit and leave a committed page unwritten after commit. Recovery needs enough durable history to handle both.
 
-**You will:** trace before/after log records, dirty-page recLSNs, pageLSNs, a checkpoint and analysis/redo/undo. **Prerequisites:** WAL ordering and the transfer invariant. **Runtime:** an executable single-writer log and page engine, not a production storage manager.
+**You will:** trace before/after log records, dirty-page recLSNs, pageLSNs, a checkpoint and analysis/redo/undo. **Prerequisites:** [WAL ordering and commit](./wal.html). **Runtime:** an executable single-writer log and page engine, not a production storage manager.
 
 <!-- concept: recovery -->
 
 ## Predict
 
-Alice's uncommitted debit reaches its data page. Bob's credit exists only in memory. What must recovery do if the transaction never committed? What if its COMMIT record is durable but Bob's data page is still old?
+Choose the loser scenario on paper: Alice’s logged debit reaches disk, then a checkpoint records T1 as active, with no COMMIT. Is T1 a winner after restart? Predict whether its pre-checkpoint UPDATE remains necessary and which value undo restores. Contrast a durable COMMIT whose Bob page is still old.
 
 ## Why both redo and undo exist
 
@@ -23,9 +23,9 @@ The model exposes these structures:
 | Disk page | persisted value and pageLSN |
 | flushedLSN | end of the durable log prefix |
 | Transaction descriptor | active/committed status and lastLSN |
-| Fuzzy checkpoint | transaction metadata and dirty-page table; data pages need not all be forced |
+| Checkpoint snapshot | transaction metadata and dirty-page table; data pages need not all be forced |
 
-A **log sequence number (LSN)** orders log records. WAL requires `flushedLSN >= page.pageLSN` before that dirty page reaches disk. Durable COMMIT requires flushing its record and the preceding records. It does not require forcing all data pages.
+A **log sequence number (LSN)** orders log records. WAL requires `flushedLSN >= page.pageLSN` before that dirty page reaches disk. Durable COMMIT requires flushing its record and the preceding records. It does not require forcing all data pages. Here checkpoint metadata is captured atomically between operations; it does not implement a production fuzzy-checkpoint merge while transactions continue.
 
 ## Control the experiment
 
@@ -55,7 +55,7 @@ The starter reapplies a record when pageLSN equals recordLSN. Correct that bound
 
 ## Change one thing
 
-Remove checkpoint from the repaired schedule. Compare the dirty-page table and redo scan start. Add flush:bob after COMMIT and verify recovery skips the already installed page. Try multiple update:alice steps before the credit; inspect the transaction's prevLSN links and explain reverse-order undo. Keep the intended final transfer amounts consistent when editing deltas.
+Remove checkpoint from the repaired schedule. Compare the dirty-page table and redo scan start. Add flush:bob after commit and verify recovery skips the already installed page. Replace update:alice:-30 with two update:alice:-15 operations, keeping the total debit and credit unchanged. Inspect prevLSN links and reverse-order undo before commit, then confirm the original transfer after commit. Use loser to test your active-checkpoint prediction.
 
 <details><summary>Hint 1 · Separate durable facts from buffered intentions</summary><p>Crash discards the log suffix after flushedLSN and every volatile frame. Recovery can use only the retained log and disk images, plus acknowledged outcomes held by the outside observer.</p></details>
 <details><summary>Hint 2 · A checkpoint is not a commit or automatic log truncation</summary><p>An active transaction can have records before the checkpoint that undo still needs. A dirty page can have an older recLSN that redo still needs. The checkpoint records those dependencies rather than erasing them.</p></details>
@@ -67,6 +67,10 @@ Remove checkpoint from the repaired schedule. Compare the dirty-page table and r
 
 ## Transfer the idea
 
-Extend the log format with a CLR containing undoNextLSN. Draw a crash after undoing Alice but before finishing recovery. Identify which record prevents the next restart from undoing the same action incorrectly. Also specify the conditions under which a log prefix can be truncated safely.
+Design a log-retention decision with a dirty Bob page and an active T1 whose earlier Alice update may need undo. Identify the oldest records each dependency still needs, then explain why neither a checkpoint nor flushing one page alone makes the whole earlier prefix disposable. State when both dependencies would be discharged. This is a design task; the browser engine retains its whole log.
+
+**Optional advanced extension:** continue to A1 to add compensation log records and restartable undo. CLR design is outside the core completion criteria.
+
+**Success criteria:** classify a checkpointed active transaction as a loser; cite an actual applied/skipped LSN and an undo before-image; pass the redo guard bench; justify retaining pre-checkpoint log records without requiring the optional ARIES protocol.
 
 **Primary sources:** [PostgreSQL WAL](https://www.postgresql.org/docs/current/wal-intro.html), [checkpoints](https://www.postgresql.org/docs/current/wal-configuration.html) and [Mohan et al., ARIES](https://dl.acm.org/doi/10.1145/128765.128770).

@@ -2,13 +2,15 @@
 
 A transfer changes two pages. The machine can stop after either write. Give recovery enough durable information to choose one complete outcome.
 
-**You will:** Trace write-ahead logging, identify a durable commit record, and recover every prefix of the write sequence. **Prerequisites:** atomicity and file persistence. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Trace write-ahead logging, identify a durable commit record, and recover every prefix of the write sequence. **Prerequisites:** [file persistence ordering](./files.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+A **log sequence number (LSN)** identifies a record's position in the recovery log. A page's **pageLSN** identifies the newest logged change installed in that page. A durable log flush preserves a prefix of records; it is different from writing a changed data page. This lab starts with simpler durable/not-durable flags, then the next engine exposes numeric LSNs.
 
 <!-- concept: wal -->
 
 ## Predict before running
 
-Starting at Alice = 100 and Bob = 100, what survives a crash after Alice’s new page reaches disk but before Bob’s? Which information would let recovery finish safely?
+Compare a crash after Alice’s page install in the in-place baseline with that same event in the WAL repair. Does the repair already have a durable COMMIT at that point? Also predict recovery after its log flush but before its commit marker. Use durable facts rather than event position alone.
 
 ## Control the experiment
 
@@ -44,7 +46,7 @@ The next [recovery-engine lab](./recovery-engine.html) replaces abstract log boo
 
 Design a batch containing two transfers. Decide whether the commit unit is each transfer or the whole batch. Draw the log records and commit markers and describe recovery after every marker. Identify how group commit could share flush cost without sharing application atomicity.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** locate the durable commit marker and record old/new recovery outcomes on both sides; distinguish log flush, page flush and acknowledgement; state the page/marker atomicity assumptions and keep group commit separate from transaction atomicity.
 
 **Primary reference:** [PostgreSQL write-ahead log](https://www.postgresql.org/docs/current/wal-intro.html).
 

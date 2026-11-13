@@ -2,13 +2,13 @@
 
 Recovery writes the missing result, then fails before clearing its work list. The next recovery must not apply the effect twice.
 
-**You will:** Choose a replay-safe representation and test repeated failure during recovery. **Prerequisites:** the WAL commit point. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Choose a replay-safe representation and test repeated failure during recovery. **Prerequisites:** [pageLSNs, redo and undo](./recovery-engine.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: recovery -->
 
 ## Predict before running
 
-A committed increment of 20 has already been replayed into a balance of 100. The log survives. What happens if startup adds 20 again?
+Use initial = 80 and amount = 5, instead of the worked example’s 100 and 20. Predict balances after the first replay and two further restarts for increment and after-image. Would testing amount = 0 expose the defect? Test your changed fixture after reproducing the baseline.
 
 ## Control the experiment
 
@@ -22,7 +22,7 @@ Run the increment baseline to its final step, then press Crash & recover here. I
 
 ## Change one thing
 
-Select after-image. Run to the end and crash repeatedly. Change initial and amount, then repeat. Compare “add 20” with “set the committed page to 120.” Record the log identity and final result that would be needed to distinguish repeated replay from a genuinely new operation.
+Select Repair (representation after-image). Run to the end and crash repeatedly. Now test your predicted fixture: initial = 80 and amount = 5. Use those same values for each representation; compare results after one replay and two additional Crash & recover presses. Finally try amount = 0 and explain why a passing result there cannot establish replay safety for nonzero operations. Record the log identity needed to distinguish replay from a genuinely new operation.
 
 Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
 
@@ -46,7 +46,7 @@ Do not discard a log prefix simply because a checkpoint exists: dirty-page redo 
 
 A ledger contains two legitimate deposits of the same amount. Explain why deduplicating by amount is incorrect. Choose a transaction or log-record identity and specify how the applied marker becomes atomic with the balance change.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** compare at least two successive restarts under both representations; verify the independent target value rather than replay count; identify legitimate duplicate amounts and make the applied marker atomic with its effect.
 
 **Primary reference:** [PostgreSQL reliability and WAL](https://www.postgresql.org/docs/current/wal-reliability.html).
 

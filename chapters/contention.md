@@ -2,7 +2,7 @@
 
 A single lock makes the service easy to reason about. It also makes independent customers wait behind one another.
 
-**You will:** Compare lock granularity under explicit assumptions and preserve the scope of the invariant while improving concurrency. **Prerequisites:** locks and invariants. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Compare lock granularity under explicit assumptions and preserve the scope of the invariant while improving concurrency. **Prerequisites:** [deadlocks and lock ownership](./locks.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: contention -->
 
@@ -40,6 +40,6 @@ In the [lock-manager engine](./lock-manager.html), follow the queue head and the
 
 Design a workload where every request targets the same product. Explain how you would measure lock wait, useful completions, abort rate and p95 latency. Decide whether shorter transactions, admission control or a different invariant representation can help.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** derive batch count and logical ticks from the displayed configuration; explain keys = 1 and a hot-key counterexample; preserve the invariant’s scope and identify production measurements the arithmetic omits.
 
 **Primary reference:** [PostgreSQL lock monitoring](https://www.postgresql.org/docs/current/monitoring-locks.html).

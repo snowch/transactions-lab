@@ -2,7 +2,7 @@
 
 One bicycle, competing reservations, an uncertain payment, and a relay that can replay. Combine the earlier repairs without assuming any one spans the entire workflow.
 
-**You will:** Design a reservation/payment/dispatch boundary and verify each resource independently under failures. **Prerequisites:** all five earlier parts. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Design a reservation/payment/dispatch boundary and verify each resource independently under failures. **Prerequisites:** parts I–V, especially [idempotency](./idempotency.html) and [compensation](./sagas.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: design -->
 
@@ -40,6 +40,6 @@ Use your completed [visibility](./mvcc.html), [validation](./validation.html), [
 
 Design the missing path: payment succeeds, the reservation expires, and confirmation cannot commit. Specify reconciliation or refund, a stable refund key, pending states and operator intervention. Then propose tests for concurrent duplicate requests and crashes during compensation.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** submit baseline, protected and relay-replay evidence with separate inventory, charge, delivery and effect checks; map each guarantee to its local primitive; identify the unmodeled payment-success/reservation-expiry path.
 
 **Primary reference:** [PostgreSQL isolation and transaction design](https://www.postgresql.org/docs/current/transaction-iso.html).

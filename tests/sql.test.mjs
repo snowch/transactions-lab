@@ -18,15 +18,29 @@ for(const lab of labs){
         await db.exec(blocks[1].replace("balance + 30 WHERE id = 'alice'","balance + 30 WHERE id = 'bob'"));
         assert.equal((await db.exec(blocks[2])).at(-1).rows[0].intended_transfer_completed,true);
       }
-      if(lab.slug==='atomicity')assert.deepEqual((await db.query('SELECT id,balance FROM accounts ORDER BY id')).rows,[{id:'alice',balance:70},{id:'bob',balance:130}]);
+      if(lab.slug==='atomicity'){
+        assert.deepEqual((await db.query('SELECT id,balance FROM accounts ORDER BY id')).rows,[{id:'alice',balance:70},{id:'bob',balance:130}]);
+        await db.exec('UPDATE accounts SET balance=100;');
+        await assert.rejects(db.exec(blocks[2].replace('balance - 30','balance - 130')),error=>error.code==='23514');
+        await db.exec('ROLLBACK;'); // The browser worker performs this rollback after an SQL error.
+        assert.deepEqual((await db.query('SELECT id,balance FROM accounts ORDER BY id')).rows,[{id:'alice',balance:100},{id:'bob',balance:100}]);
+      }
       if(lab.slug==='constraints'){
         assert.equal((await db.query("SELECT stock FROM inventory WHERE sku='bike'")).rows[0].stock,0);
         assert.deepEqual((await db.query('SELECT * FROM reservations')).rows,[{request_id:'request-a',sku:'bike'}]);
         assert.equal(outputs.at(-1).at(-1).rows[0].inventory_conserved,true);
+        await db.exec("TRUNCATE reservations; UPDATE inventory SET stock=1 WHERE sku='bike';");
+        await db.exec(blocks[1].replaceAll(' AND stock > 0',''));
+        await assert.rejects(db.exec(blocks[2].replaceAll(' AND stock > 0','')),error=>error.code==='23514');
+        await db.exec('ROLLBACK;');
+        assert.equal((await db.query("SELECT stock FROM inventory WHERE sku='bike'")).rows[0].stock,0);
+        assert.deepEqual((await db.query('SELECT * FROM reservations')).rows,[{request_id:'request-a',sku:'bike'}]);
       }
       if(lab.slug==='outbox'){
         assert.deepEqual(outputs.at(-1).at(-1).rows,[{order_survived:false,intent_survived:false}]);
         assert.equal((await db.query('SELECT count(*)::int AS n FROM orders JOIN outbox ON orders.id=outbox.order_id')).rows[0].n,1);
+        const committed=await db.exec(blocks[1].replace('ROLLBACK;','COMMIT;'));
+        assert.deepEqual(committed.at(-1).rows,[{order_survived:true,intent_survived:true}]);
       }
     }finally{await db.close();}
   });

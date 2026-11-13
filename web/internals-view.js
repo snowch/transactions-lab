@@ -11,7 +11,10 @@ export function renderInternals(container,id,s) {
     for(const row of rows){const tr=body.insertRow();for(const value of row)tr.insertCell().textContent=text(value);}
     scroll.append(table);container.append(heading,scroll);return scroll;
   }
-  if(id==='transaction-manager')table('Transaction descriptor and publication',['Status','Private writes','Public map'],[[s.status,s.privateWrites,s.public]]);
+  if(id==='transaction-manager'){
+    table('Transaction descriptor and publication',['Status','Private writes','Public map'],[[s.status,s.privateWrites,s.public]]);
+    table('Reader observations retained across commit or abort',['Observation','Alice','Bob','Total'],s.observations.map((values,i)=>[i+1,values.alice,values.bob,values.alice+values.bob]));
+  }
   if(id==='mvcc'){
     table('Physical tuple versions',['Version','Value','Creator xmin','Superseder xmax'],s.versions.map(v=>[v.id,v.value,v.xmin,v.xmax]));
     table('Snapshot and transaction status',['Pinned snapshot','Current transaction statuses','Observed values'],[[s.snapshot,s.statuses,s.reads.map(r=>r.value)]]);

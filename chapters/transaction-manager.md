@@ -1,14 +1,14 @@
 # Build the transaction manager.
 
-BEGIN does not make a sequence of arbitrary writes indivisible. Something inside the engine must track the transaction, retain its private work, and control when other readers can observe it.
+A database promises one transaction outcome for the work between BEGIN and its commit or rollback. Inside the engine, a transaction manager tracks that attempt, retains its tentative work, and controls when other readers can observe it. Build the mechanism behind that promise.
 
-**You will:** implement publication of a write set, trace commit and abort state transitions, and explain which guarantees this mechanism does and does not provide. **Prerequisites:** invariants and basic objects/maps. **Runtime:** an executable single-writer engine, followed by a JavaScript implementation bench.
+**You will:** implement publication of a write set, trace commit and abort state transitions, and explain which guarantees this mechanism does and does not provide. **Prerequisites:** [invariants](./invariants.html) and JavaScript objects/maps. **Runtime:** an executable single-writer engine, followed by a JavaScript implementation bench.
 
 <!-- concept: publication -->
 
 ## Predict
 
-Alice and Bob each have 100. The writer stages Alice = 70 before staging Bob = 130. Where can those intermediate values live without another reader seeing half a transfer?
+The writer stages only Alice = 70, another reader observes, and the writer aborts. Predict both the final public map and what the reader remembers under each-write versus commit publication. Can a final total of 200 establish that no partial state was ever exposed?
 
 ## The machinery
 
@@ -35,7 +35,9 @@ Step the baseline. The writer exposes Alice immediately, and the next observatio
 
 The diagram separates the private write set from public values. Step across publication and watch which store changes; the arrows show the model’s publication path, not disk persistence.
 
-Select Repair. Watch the tentative values accumulate separately from public data. The transaction passes through committing before publication. Try the abort scenario; the staged debit disappears without changing the public map.
+Select Repair. Watch the tentative values accumulate separately from public data. The transaction passes through committing before publication. To test your abort prediction, select abort, run it, then change only publication from commit to each-write. Compare the observations array as well as the final public map: abort can restore data without retracting an earlier observation.
+
+The observation table retains what each reader actually saw. Its history check stays failed after an exposed partial read, even if the final public map is later repaired. The current-map check answers a different, narrower question.
 
 ## Read the algorithm
 
@@ -55,6 +57,8 @@ The starter publishes too early. Implement the state guard while preserving the 
 
 ## Transfer the idea
 
-Insert a crash just before and just after publication. Explain why the in-memory engine cannot yet decide what to recover after process loss. Design the transaction descriptor fields needed by the WAL engine: transaction ID, status and last log position. Then explain how a multi-writer engine would prevent one whole-map replacement from overwriting another transaction's change.
+On paper, mark process loss just before and just after publication; this volatile engine has no crash-recovery control. Explain what durable evidence a restarted process would need. Design the descriptor fields needed by the WAL engine: transaction ID, status and last log position. Then explain how a multi-writer engine would prevent one whole-map replacement from overwriting another transaction's change.
+
+**Success criteria:** cite the first exposed partial state and an observation that undo cannot retract; show commit and abort with private writes; pass the publication bench without mutating either input; identify the missing durability mechanism.
 
 **Primary sources:** [PostgreSQL transaction processing internals](https://www.postgresql.org/docs/current/transaction-id.html) and [SQLite atomic commit](https://sqlite.org/atomiccommit.html).

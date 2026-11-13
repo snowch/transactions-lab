@@ -2,13 +2,13 @@
 
 The server commits the charge. The response disappears. The client knows the outcome is unknown, not that the charge failed.
 
-**You will:** Recover an ambiguous outcome with stable request identity and bind that identity to the original payload and result. **Prerequisites:** retries and external effects. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Recover an ambiguous outcome with stable request identity and bind that identity to the original payload and result. **Prerequisites:** [outbox recovery boundaries](./outbox.html) and [retries](./retries.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: idempotency -->
 
 ## Predict before running
 
-When a request times out, is it safe to generate a new payment key and try again? Which server-side state would make retry safe?
+Reuse one key but change its amount from 30 to 40. Predict charges, storedAmount and response under checked and unchecked binding. Can a one-charge check pass while the API silently returns a result for the wrong payload?
 
 ## Control the experiment
 
@@ -42,6 +42,6 @@ Retention and lookup are part of correctness. Expiring the key while retries are
 
 A mobile client retries tomorrow after its key has expired. Define the guarantee you can still offer. Compare looking up an order by a durable business identifier with relying only on a short-lived idempotency cache.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** count charges separately from attempts; compare checked and unchecked payload binding with the same key; identify the stored result and specify authenticated scope, retention and concurrent-duplicate behavior.
 
 **Primary reference:** [Stripe idempotent requests](https://docs.stripe.com/api/idempotent_requests).

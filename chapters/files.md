@@ -2,13 +2,13 @@
 
 Readers see the new configuration, the writer reports success, and a crash brings back the old one. Visibility and durability are different promises.
 
-**You will:** Separate file contents from the directory entry and place the acknowledgement after the required persistence operations. **Prerequisites:** atomicity and failure boundaries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Separate file contents from the directory entry and place the acknowledgement after the required persistence operations. **Prerequisites:** [atomicity](./atomicity.html) and the distinction between visibility and durability. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: files -->
 
 ## Predict before running
 
-Does an atomic rename guarantee that the new bytes and replacement name survive power loss? Which exact operation would justify saying “saved”?
+For the durable protocol, predict recovery at three boundaries: after file fsync but before rename, after rename but before directory fsync, and after directory fsync but before acknowledgement. Which outcomes are permitted at each boundary, and what extra promise begins at acknowledgement?
 
 ## Control the experiment
 
@@ -24,7 +24,7 @@ Step to the rename in the baseline. Crash and recover there. The simplified dura
 
 ## Change one thing
 
-Select the durable repair: write temp, fsync temp, rename, fsync parent directory, then acknowledge. Crash at every prefix. Old or new is acceptable before acknowledgement; after acknowledgement, new is required. Try directory-first to observe a persisted name referring to incomplete contents.
+Select Repair (protocol durable): write temp, fsync temp, rename, fsync parent directory, then acknowledge. Crash at every prefix and check your three boundary predictions. A complete old or new file is acceptable before acknowledgement; after acknowledgement, new is required. Select unsafe-order (protocol directory-first) to observe a persisted name referring to incomplete contents. This model chooses explicit persistence outcomes; a real storage stack may persist additional writes earlier.
 
 Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
 
@@ -44,7 +44,7 @@ Compare the file replacement steps with the [WAL page engine](./recovery-engine.
 
 Replace two related files, data and index. Explain why two atomic renames are not one atomic multi-file transaction. Design a manifest or generation directory that readers follow through one published reference.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** record recovered contents before and after acknowledgement at every repaired prefix; distinguish file-data and directory-name persistence; explain why process exit cannot validate power-loss behavior or a multi-file commit.
 
 **Primary reference:** [Linux fsync](https://man7.org/linux/man-pages/man2/fsync.2.html).
 

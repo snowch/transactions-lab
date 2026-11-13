@@ -21,8 +21,9 @@ export function publish(base, writes, status) {
 export function transactionManager(config) {
   choose(config, 'publication', ['each-write','commit']);
   const state = {public:{alice:100,bob:100}, privateWrites:{}, undo:{}, status:'active', observations:[]};
-  const trace = recorder(state, s => [check('public state is a complete old or new transfer',
-    (s.public.alice===100&&s.public.bob===100)||(s.public.alice===70&&s.public.bob===130))]);
+  const complete=values=>(values.alice===100&&values.bob===100)||(values.alice===70&&values.bob===130);
+  const trace = recorder(state, s => [check('public state is a complete old or new transfer',complete(s.public)),
+    check('every recorded reader saw a complete old or new transfer',s.observations.length?s.observations.every(complete):null)]);
   for (const op of program(config)) {
     const [action,key,text] = op.split(':');
     if (action==='observe') {state.observations.push(copy(state.public)); trace.emit('Another reader samples the public state'); continue;}
@@ -207,7 +208,7 @@ export function recoveryEngine(config) {
     }else if(action==='checkpoint') {
       const dirty=Object.fromEntries(Object.entries(s.buffer).filter(([,f])=>f.recLSN!==null).map(([p,f])=>[p,f.recLSN]));
       const lsn=append({type:'CHECKPOINT',dirty,transaction:copy(s.transaction)});s.flushedLSN=lsn;
-      s.checkpoint={lsn,dirty,transaction:copy(s.log.at(-1).transaction)};t.emit('Persist a fuzzy checkpoint: transaction and dirty-page metadata, without forcing pages');
+      s.checkpoint={lsn,dirty,transaction:copy(s.log.at(-1).transaction)};t.emit('Persist checkpoint metadata atomically, without forcing data pages');
     }else if(action==='commit') {
       if(s.transaction.status!=='active')throw Error('Transaction has already finished.');
       s.flushedLSN=append({type:'COMMIT',tx:'T1'});s.transaction.status='committed';s.acknowledged=true;
@@ -320,7 +321,7 @@ export const mechanismDefinitions={
   mvcc:{presets:{broken:{isolation:'repeatable-read',retention:'latest-only',schedule:versions},repaired:{isolation:'repeatable-read',retention:'snapshot-aware',schedule:versions},'new-snapshot':{isolation:'read-committed',retention:'snapshot-aware',schedule:versions}},boundary:'An executable tuple-version and snapshot-membership algorithm with bounded transaction IDs. One writer and one reader; no PostgreSQL command IDs, wraparound, subtransactions or physical vacuum implementation.'},
   'lock-manager':{presets:{broken:{deadlock:'ignore',schedule:upgrades},repaired:{deadlock:'abort-youngest',schedule:upgrades}},boundary:'Actual S/X compatibility checks, FIFO queues, graph construction and DFS cycle detection. Two named clients and two keys; no lock escalation or SQL lock modes. Locking protects access, not durable storage.'},
   validation:{presets:{broken:{validation:'write-set',schedule:optimistic},repaired:{validation:'read-set',schedule:optimistic}},boundary:'An executable optimistic transaction engine with versioned key reads and atomic validate/publish. Finite key reads only; range predicates need additional tracking. This is OCC, not PostgreSQL SSI.'},
-  'recovery-engine':{presets:{broken:{wal:'disabled',schedule:logging},repaired:{wal:'enforced',schedule:logging},loser:{wal:'enforced',schedule:['update:alice:-30','flush:alice','checkpoint']}},boundary:'A one-writer steal/no-force buffer and log engine with LSNs, a fuzzy checkpoint, redo and before-image undo. No torn pages, log truncation, concurrent writers or ARIES compensation records. A model crash discards volatile frames and log suffixes.'},
+  'recovery-engine':{presets:{broken:{wal:'disabled',schedule:logging},repaired:{wal:'enforced',schedule:logging},loser:{wal:'enforced',schedule:['update:alice:-30','flush:alice','checkpoint']}},boundary:'A one-writer steal/no-force buffer and log engine with LSNs, an atomic metadata checkpoint, redo and before-image undo. No torn pages, log truncation, concurrent writers or ARIES compensation records. A model crash discards volatile frames and log suffixes.'},
   'replicated-log':{presets:{broken:{ack:'local',schedule:['append:COMMIT','ack','crash:A','elect:B','append:NOOP','replicate:C','recover']},repaired:{ack:'quorum',schedule:['append:COMMIT','replicate:B','ack','crash:A','elect:B','append:NOOP','replicate:C','replicate:C','recover']},'missing-majority':{ack:'quorum',schedule:['append:COMMIT','crash:B','crash:C','ack']}},boundary:'An executable three-node Raft-style log core: durable entries/votes, up-to-date elections, prefix matching/backtracking and current-term majority commit. Sends are explicit atomic events; no timers, partitions with concurrent leaders, membership changes, snapshots or production Raft claim.'},
 };
 export const mechanismRunners={'transaction-manager':transactionManager,mvcc,'lock-manager':lockManager,validation,'recovery-engine':recoveryEngine,'replicated-log':replicatedLog};

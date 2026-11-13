@@ -2,7 +2,9 @@
 
 Both participants vote yes. One learns commit. The other only sees a timeout. Make a safe decision without pretending the timeout is evidence of abort.
 
-**You will:** Trace prepare and commit records, explain two-phase commit blocking, and recover a known decision. **Prerequisites:** durable logging and recovery. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Trace prepare and commit records, explain two-phase commit blocking, and recover a known decision. **Prerequisites:** [durable decisions](./wal.html) and [recovery](./recovery-engine.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+**Two-phase commit (2PC)** first collects durable participant promises, then records and distributes one final decision. **Prepared** means the participant can honor that later decision after restart; it has not yet learned a final outcome.
 
 <!-- concept: twoPhase -->
 
@@ -46,6 +48,6 @@ A real system also needs transaction identities, participant lists, duplicate-me
 
 Change the history so B votes NO before the decision. Specify the coordinator’s outcome and what A must retain while waiting. Then describe what happens if the coordinator loses its durable storage rather than merely restarting.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** cite PREPARED and the durable coordinator decision; show that waiting preserves agreement while B retains resources; distinguish blocked completion from an unsafe timeout abort and explain authoritative resolution.
 
 **Primary reference:** [PostgreSQL PREPARE TRANSACTION](https://www.postgresql.org/docs/current/sql-prepare-transaction.html).

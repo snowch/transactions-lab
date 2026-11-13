@@ -2,13 +2,15 @@
 
 An UPDATE can create a new row version while an older transaction keeps reading the old value. Implement the predicate that decides which physical version becomes a logical row.
 
-**You will:** evaluate xmin/xmax against snapshot membership and transaction status, trace an update's version chain, and identify versions vacuum must retain. **Prerequisites:** transaction descriptors and sets/maps. **Runtime:** a small executable version store; PostgreSQL has additional visibility rules.
+**You will:** evaluate xmin/xmax against snapshot membership and transaction status, trace an update's version chain, and identify versions vacuum must retain. **Prerequisites:** [transaction descriptors](./transaction-manager.html) and JavaScript sets/maps. **Runtime:** a small executable version store; PostgreSQL has additional visibility rules.
+
+**Multiversion concurrency control (MVCC)** retains multiple physical tuple versions. A **snapshot** describes which transactions a reader can see; a committed version can still be outside an older snapshot. The diagram introduces the creator marker xmin and superseder marker xmax; the predicate below makes their meanings precise.
 
 <!-- concept: mvcc -->
 
 ## Predict
 
-A reader starts before a writer commits an update from 100 to 70. After commit, are both stored versions still needed? Is “the creator has committed now” enough to make the new version visible to the old reader?
+Unlike the first diagram example, let the writer begin before the reader but remain active when the snapshot is captured. It commits afterward. Does an ID below the snapshot boundary make its new tuple visible? Predict the old tuple’s visibility if that writer aborts instead. Test both variations in Change one thing.
 
 ## A row is a history
 
@@ -52,6 +54,8 @@ Move begin-writer before begin-reader, leaving the writer active at snapshot cap
 
 ## Transfer the idea
 
-Add a second pinned reader that begins after the writer commits. Draw the minimum tuple set needed by both snapshots. Explain how a long-running transaction can retain dead versions and increase storage even while short transactions commit normally. Then predict whether this visibility mechanism alone prevents write skew; follow the next isolation investigations to test that prediction.
+Design a second pinned reader that begins after the writer commits. Draw the minimum tuple set needed by both snapshots. The browser engine has one reader; testing two pins requires extending the downloaded engine. Explain how a long-running transaction can retain dead versions and increase storage even while short transactions commit normally. Then predict whether visibility alone prevents write skew; follow the next isolation investigations to test that prediction.
+
+**Success criteria:** calculate visibility from creator, superseder, active-at-capture membership and status; explain an aborted writer; retain every version needed by the pinned snapshot; pass the visibility bench and distinguish the two meanings of xmax.
 
 **Primary sources:** [PostgreSQL system columns](https://www.postgresql.org/docs/current/ddl-system-columns.html), [MVCC introduction](https://www.postgresql.org/docs/current/mvcc-intro.html) and [vacuum](https://www.postgresql.org/docs/current/routine-vacuuming.html).

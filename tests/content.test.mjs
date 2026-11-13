@@ -10,6 +10,7 @@ test('all investigations offer experiment, feedback, transfer and design record'
   for(const lab of labs){
     const source=await readFile(lab.file,'utf8'),html=await readFile(`dist/${lab.slug}.html`,'utf8');
     assert.match(source,/Transfer the idea/);assert.match(source,/<details>/);assert.match(html,/data-note="invariant"/);
+    assert.match(source,/\*\*Success criteria:\*\*/);
     assert.match(source,/<!-- concept: [a-zA-Z]+ -->/);
     assert.match(html,/class="concept-figure"/);
     assert.ok(!html.includes('<!-- concept:'),`${lab.slug}: concept rendered`);

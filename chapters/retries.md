@@ -2,13 +2,13 @@
 
 The database rejects an unsafe attempt. Your retry can still break the business rule if it reuses the observation that caused the attempt.
 
-**You will:** Specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** write skew and aborts. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** [write skew](./write-skew.html) and [validation](./validation.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: retry -->
 
 ## Predict before running
 
-A sees two doctors and decides to leave. B leaves first. If A starts a new transaction but retries only its old write, is the database error handling enough?
+A first observes two doctors at version 0; B leaves and advances the version. For each retry policy, predict A’s observed value, expectedVersion and final roster. Is incrementing attempts and opening a new transaction sufficient if those decision inputs remain unchanged?
 
 ## Control the experiment
 
@@ -40,6 +40,6 @@ The [validation engine](./validation.html) shows the read set, private writes, c
 
 A transfer service calculates a currency quote before opening the transaction. Decide whether a retry can reuse it, whether it has an expiry, and which account/limit checks must be repeated. Specify what the client sees when retries are exhausted.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** show which observed value and version change on a whole-decision retry; retain at least one doctor; place external effects outside an unsafe repeat loop and specify retry exhaustion behavior.
 
 **Primary reference:** [PostgreSQL serialization failure handling](https://www.postgresql.org/docs/current/mvcc-serialization-failure-handling.html).

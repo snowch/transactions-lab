@@ -18,6 +18,8 @@ Step reveals a transition, Run to end exposes the whole schedule, and clicking a
 
 A green check means the named predicate holds at that state. It does not prove correctness over all inputs. Pending means that a postcondition is not yet due or recovery has not been evaluated. A failed deadlock check concerns liveness, whereas a failed inventory check concerns safety.
 
+The scenario notice names input fields that differ from that lab's original baseline preset, including changes made in the JSON editor. It does not compare outcomes or certify a controlled experiment. Match the other settings yourself when isolating a policy change; restoring a preset can change several fields at once.
+
 ## Executable internals and implementation benches
 
 Each investigation begins with an annotated concept illustration before its prediction prompt. These are authored teaching examples, rendered as static SVGs with a stacked layout on narrow screens. They explain the mechanism independently of the selected experiment; their labels and captions are not execution evidence. They remain available with JavaScript disabled and can be opened as standalone diagrams.

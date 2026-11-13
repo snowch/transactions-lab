@@ -2,7 +2,7 @@
 
 A design is useful when another engineer can find its commit boundary, challenge its assumptions and reproduce the evidence behind it.
 
-**You will:** produce a transaction design review supported by baseline, broken and repaired runs. **Prerequisites:** the order-service capstone. **Runtime:** your saved evidence and a local design notebook; no new protocol is simulated here.
+**You will:** produce a transaction design review supported by baseline, broken and repaired runs. **Prerequisites:** the [order-service investigation](./order-workflow.html) and your six core implementation benches. **Runtime:** your saved evidence and a local design notebook; no new protocol is simulated here.
 
 ## Start from a requirement
 
@@ -63,10 +63,12 @@ Include your six implementation-bench functions and their named-case results. Ch
 
 Show a tuple header and snapshot calculation, a lock-table or version-validation conflict, and a pageLSN/log recovery decision. For a distributed claim, include term/index pairs, an election check and the committed decision record, then distinguish that record from participant-local commit. Say which production details your small engines deliberately omit.
 
-Finally propose one extension to implement yourself: predicate/range validation, a safe version-retention horizon, CLRs for interrupted undo, or retransmitted two-phase decision messages. Provide data structures, transition rules, an adversarial schedule and independent verification criteria before coding it.
+Finally propose one core extension to implement yourself: predicate/range validation, a safe version-retention horizon, or retransmitted two-phase decision messages. Provide data structures, transition rules, an adversarial schedule and independent verification criteria before coding it. If you choose the optional advanced ARIES path, interrupted undo with CLRs is an alternative extension rather than a core requirement.
 
 ## Transfer the idea
 
 Choose a different system: a document index, account provisioning or a multi-file package update. Reuse the design questions, replacing the checkout-specific mechanisms where needed. Explain which guarantees can be weaker and why the business requirement permits that change.
+
+**Success criteria:** submit the six core functions and named-case results, a boundary diagram, reproducible concurrency/crash/replay evidence and a failure response table; challenge one claim with a counterexample and separate implemented behavior from assumptions. Optional ARIES work is not required.
 
 Use the notebook below as your final design record. Include filenames of the downloaded evidence and a short explanation of what each run supports. A completed checklist is a review aid; the reasoning and reproducibility are the deliverable.

@@ -2,7 +2,7 @@
 
 “Take a lock” becomes concrete when you implement the compatibility check, queue the blocked request, construct its dependencies and decide which transaction to abort.
 
-**You will:** trace shared/exclusive compatibility and upgrades, build a wait-for graph, and implement cycle detection. **Prerequisites:** transaction lifetime and directed graphs; the graph traversal is introduced below. **Runtime:** an executable lock table and request queues.
+**You will:** trace shared/exclusive compatibility and upgrades, build a wait-for graph, and implement cycle detection. **Prerequisites:** [transaction lifetime](./transaction-manager.html) and JavaScript sets; directed-graph traversal is introduced here. **Runtime:** an executable lock table and request queues.
 
 <!-- concept: locks -->
 
@@ -49,6 +49,10 @@ Use `["A:X:bike", "B:S:bike", "A:commit", "B:commit"]`. B waits, A releases, and
 
 ## Transfer the idea
 
-Add intention locks for a table/row hierarchy. State why a table S request must notice row writers without inspecting every row lock individually. Then propose a fairness rule that prevents an endless stream of new readers from starving a queued writer, and explain the queue dependencies it adds to the detector.
+Design three transactions holding x, y and z respectively, each requesting the next resource in a cycle. Derive the graph and test your downloaded detector with it. Remove one request and explain why the remaining shared downstream dependency is not itself a cycle. The browser ownership engine has two clients; the detector function accepts a larger graph.
+
+**Optional extension:** propose intention locks for a table/row hierarchy, or a fairness rule preventing new readers from starving a queued writer. Specify the extra compatibility and queue dependencies before extending the engine.
+
+**Success criteria:** derive the upgrade cycle from conflicting holders and queued requests; show release and wakeup after victim abort; pass the detector bench including shared downstream nodes; distinguish cycle detection from timeout.
 
 **Primary sources:** [PostgreSQL locking and deadlocks](https://www.postgresql.org/docs/current/explicit-locking.html) and [SQLite locking protocol](https://sqlite.org/lockingv3.html).

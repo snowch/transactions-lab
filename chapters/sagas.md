@@ -2,7 +2,9 @@
 
 Payment fails after stock was reserved. Releasing the stock also fails once. Recovery must remember the unfinished business operation.
 
-**You will:** Define a durable compensation workflow and explain why compensation differs from rollback. **Prerequisites:** local transactions, outboxes and idempotency. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Define a durable compensation workflow and explain why compensation differs from rollback. **Prerequisites:** [outboxes](./outbox.html) and [idempotency](./idempotency.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+A **saga** coordinates separately committed steps and records compensating business actions if a later step fails. A compensation is another fallible operation, such as releasing a reservation; it does not rewind other systems' observations.
 
 <!-- concept: saga -->
 
@@ -22,7 +24,7 @@ Follow the reservation, declined payment and failed release. The baseline forget
 
 ## Change one thing
 
-Run durable-retry. Pending compensation survives a modeled restart, the worker retries and records the release. Inspect history: reservation and release remain observable. Sketch an idempotent release keyed by reservation ID, so a retry after a lost acknowledgement cannot add stock twice.
+Select Repair (compensation durable-retry). Pending compensation survives a modeled restart, the worker retries and records the release. Inspect history: reservation and release remain observable. Sketch an idempotent release keyed by reservation ID, so a retry after a lost acknowledgement cannot add stock twice. The supplied failure occurs before the first release takes effect; a lost acknowledgement after a successful release is a separate design/test case for your sketch.
 
 Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
 
@@ -40,6 +42,6 @@ After a failure, restart reads the persisted state and retries the pending actio
 
 An email has already told the customer their order is confirmed. Payment later fails. Define the compensating communication and explain which original effects cannot be undone. Specify the customer-visible status during recovery.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** distinguish pending compensation from completed failure; show that stock is released before failed-complete; retain observable history and specify a stable release identity plus an escalation path for prolonged failure.
 
 **Primary reference:** [Garcia-Molina and Salem: Sagas](https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf).

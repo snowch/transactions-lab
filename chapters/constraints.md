@@ -2,7 +2,7 @@
 
 Two customers see one bicycle. Move the availability decision into the same atomic operation as the stock change.
 
-**You will:** combine a conditional update, a reservation row and database constraints. **Prerequisites:** transaction boundaries. **Runtime:** real PostgreSQL, one connection. The next lab controls the competing-client schedule.
+**You will:** combine a conditional update, a reservation row and database constraints. **Prerequisites:** [atomicity and rollback](./atomicity.html). **Runtime:** real PostgreSQL, one connection. The [lost-update investigation](./lost-update.html) controls competing customers; the next MVCC lab explains which row version a reader sees.
 
 <!-- concept: reservation -->
 
@@ -76,5 +76,7 @@ The RETURNING row connects the successful decrement to the reservation INSERT in
 ## Transfer the idea
 
 Reserve a bicycle and helmet as one bundle. Describe how you will undo a partial reservation if the helmet is unavailable. Then specify a consistent lock order and a stable request identity. [Run the real-server extension](./native.html).
+
+**Success criteria:** use RETURNING and reservation rows to identify the winning request; verify stock + reservations = 1; distinguish an empty result from a constraint error and state which isolation failures require a whole-transaction retry.
 
 **Primary references:** [Read Committed](https://www.postgresql.org/docs/current/transaction-iso.html#XACT-READ-COMMITTED) and [data-modifying WITH](https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-MODIFYING).

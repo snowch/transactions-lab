@@ -2,13 +2,15 @@
 
 An order is paid in the database, but its dispatch event never appears. Move the intent into the local commit boundary, then account for repeated publication.
 
-**You will:** Make a durable event intent atomic with a local state change and distinguish eventual delivery from exactly-once effects. **Prerequisites:** local transactions, recovery and retries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Make a durable event intent atomic with a local state change and distinguish eventual delivery from exactly-once effects. **Prerequisites:** [local commit](./wal.html) and [whole-decision retries](./retries.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+
+An **outbox** is a database table of publication intents committed with the business change. A **relay** later reads those committed rows and sends messages. A consumer **inbox** records received event identities so its local effect can be deduplicated atomically.
 
 <!-- concept: outbox -->
 
 ## Predict before running
 
-If the application commits paid status before publishing, what does a crash between those steps leave? Does publishing first remove the problem or move it?
+In the duplicate scenario, the relay sends once and crashes before recording progress. Predict the counts of paid orders, durable event intents and publications after restart. Which counts can differ without losing intent, and which additional consumer guarantee is still needed?
 
 ## Control the experiment
 
@@ -44,7 +46,7 @@ Trace this using the [private write-set manager](./transaction-manager.html) and
 
 Add cancellation. A payment event and cancellation event can be delivered out of order. Propose per-order versions and explain how the consumer avoids reopening a cancelled order. Decide when outbox and inbox records can safely expire.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** show paid status and event intent committing or rolling back together; count publications after relay restart; locate the consumer marker/effect atomic boundary and state how event identity and ordering survive retries.
 
 **Primary reference:** [Apache Kafka delivery semantics](https://kafka.apache.org/documentation/#semantics).
 

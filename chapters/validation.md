@@ -2,7 +2,7 @@
 
 Optimistic concurrency lets a transaction do tentative work before deciding whether its observations are still usable. Implement that decision from recorded versions.
 
-**You will:** build read/write sets, compare observed and current versions, and explain why write-conflict checking alone permits write skew. **Prerequisites:** snapshots and the doctor-roster invariant. **Runtime:** an executable optimistic concurrency control (OCC) engine over two keys.
+**You will:** build read/write sets, compare observed and current versions, and explain why write-conflict checking alone permits write skew. **Prerequisites:** [write-skew dependencies](./write-skew.html) and JavaScript maps. **Runtime:** an executable optimistic concurrency control (OCC) engine over two keys.
 
 <!-- concept: validation -->
 
@@ -52,5 +52,7 @@ Move T2:begin and its reads to after T1:commit, then remove T2's leaving write b
 ## Transfer the idea
 
 A request reads “all bookings overlapping this time interval.” Another transaction inserts a new overlapping row whose key was never read. Explain why validating only existing key versions misses this phantom. Add a range/predicate generation number to your proposed read set, and specify every insertion/deletion that must change it. Compare that design with predicate locking and PostgreSQL's SIREAD dependency tracking.
+
+**Success criteria:** show T2’s observed A version and the current A version at validation; abort before publishing stale private writes; pass the validator bench; identify a phantom that finite key versions cannot detect.
 
 **Primary sources:** [Kung and Robinson, On Optimistic Methods for Concurrency Control](https://dl.acm.org/doi/10.1145/319566.319567) and [PostgreSQL Serializable isolation](https://www.postgresql.org/docs/current/transaction-iso.html#XACT-SERIALIZABLE).

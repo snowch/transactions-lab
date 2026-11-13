@@ -2,7 +2,7 @@
 
 A holds the bicycle. B holds the helmet. Each needs the other item before it can finish.
 
-**You will:** Construct a wait-for cycle, distinguish blocking from deadlock, and remove the cycle through consistent acquisition order. **Prerequisites:** concurrent transactions. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Construct a wait-for cycle, distinguish blocking from deadlock, and remove the cycle through consistent acquisition order. **Prerequisites:** [lock compatibility and queues](./lock-manager.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: locks -->
 
@@ -42,7 +42,7 @@ The [lock-manager implementation](./lock-manager.html) exposes S/X compatibility
 
 Add a third resource, a coupon. Give checkout and cancellation one common resource order. Explain whether row IDs, table order, advisory locks or a single owner record make that order enforceable in your design. Reproduce the two-resource cycle on the real server.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** derive the wait-for cycle from named resources; reproduce one-way waiting with consistent order; separate a progress failure from corrupt data and specify how the application handles a deadlock abort.
 
 **Primary reference:** [PostgreSQL deadlocks](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-DEADLOCKS).
 

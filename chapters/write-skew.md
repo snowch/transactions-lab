@@ -2,13 +2,13 @@
 
 Each doctor sees someone else on call. Both leave. Every row update succeeds, and the combined result breaks the roster.
 
-**You will:** Distinguish a stable snapshot from serializability and identify a cross-row read/write dependency. **Prerequisites:** lost updates and transaction boundaries. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Distinguish a stable snapshot from serializability and identify a cross-row read/write dependency. **Prerequisites:** [snapshots](./mvcc.html) and [lost updates](./lost-update.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 <!-- concept: writeSkew -->
 
 ## Predict before running
 
-A and B both read two available doctors, then update different rows. Will avoiding a same-row write conflict preserve “at least one doctor stays”?
+Compare the overlapping schedule with A.read → A.write → B.read → B.write. What does B observe in the serial schedule, and must the serializable policy abort B merely because it writes second? Predict the roster and dependency graph for both histories.
 
 ## Control the experiment
 
@@ -46,7 +46,7 @@ PostgreSQL SSI is different from this complete-small-graph check. SIREAD predica
 
 Design a rule requiring two staff with different certifications. Compare serializable transactions with an explicitly locked roster-owner row. State which writers must follow the protocol and what happens when new staff rows are inserted.
 
-**Success criteria:** identify the first decisive transition; explain the violated rule or blocked progress; justify the repair under explicit assumptions; and name a failure your experiment does not cover.
+**Success criteria:** derive both read/write arrows from actual old versions; distinguish a rejected candidate cycle from committed history; compare overlapping and serial schedules and state why PostgreSQL SSI can abort at a different point.
 
 **Primary reference:** [PostgreSQL Serializable isolation](https://www.postgresql.org/docs/current/transaction-iso.html#XACT-SERIALIZABLE).
 

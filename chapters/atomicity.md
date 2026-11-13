@@ -2,7 +2,7 @@
 
 The debit succeeds. The credit fails. Decide which changes may be left behind and put the transaction boundary around that decision.
 
-**You will:** observe rollback, use a savepoint and separate atomicity from isolation and durability. **Prerequisites:** chapter 1. **Runtime:** real PostgreSQL, one connection; no competing client.
+**You will:** observe rollback, use a savepoint and separate atomicity from isolation and durability. **Prerequisites:** [invariants](./invariants.html) and [transaction publication](./transaction-manager.html). **Runtime:** real PostgreSQL, one connection; no competing client.
 
 <!-- concept: boundary -->
 
@@ -82,5 +82,7 @@ Even a value-preserving UPDATE can create a new tuple version. Compare Alice's c
 ## Transfer the idea
 
 A checkout reserves stock, inserts an order and sends an email. Draw the smallest useful local transaction. Place the email outside it and identify the failure gap this introduces. Save that unresolved question for the outbox lab.
+
+**Success criteria:** show the balances after full rollback and after savepoint rollback; compare the visible tuple creator inside the value-preserving update and after rollback; explain why one connection proves neither concurrent isolation nor power-loss durability.
 
 **Primary reference:** [PostgreSQL transactions](https://www.postgresql.org/docs/current/tutorial-transactions.html).

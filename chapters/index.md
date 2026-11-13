@@ -54,6 +54,10 @@ The engines are intentionally bounded. They expose real algorithms without prete
 
 Record a prediction before running. Step through state changes and identify the exact read, dependency, publication or durable record behind the result. Implement a primitive, inspect failing cases, and download your code and evidence. Then apply what you learned to an independent design task.
 
+Use the diagram as a worked example, then answer the prediction's changed schedule, input or failure boundary. For a causal comparison, hold the fixture and schedule fixed while changing one policy. Presets can change multiple settings; the experiment names those differences from the baseline. Record what you actually changed rather than attributing every difference to the preset's label.
+
+Each investigation ends with specific success criteria. Keep a prediction, the decisive state or SQL result, a controlled comparison and an explanation of the mechanism's limits. A green check or a saved self-review mark alone does not complete the investigation. The final review requires the six core functions and their evidence; A1 is an optional advanced continuation.
+
 Draft notes and implementation code save locally when browser storage is available. SQL database state and run results last only for the current page. Download the complete notebook before leaving if you need to preserve evidence. A passing case is evidence for that case, not proof over all inputs.
 
 [Runtime and primary sources](./runtime.html) · [Run the mechanisms locally](./native.html) · [Source and issue tracker](https://github.com/snowch/transactions-lab)
