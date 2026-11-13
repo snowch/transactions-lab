@@ -276,9 +276,11 @@ test('concept explanations precede prediction and remain readable without JavaSc
 });
 
 test('concept SVG labels fit their nodes and responsive panels',async({page})=>{
-  for(const id of Object.keys(concepts))for(const mobile of [false,true]){
+  const allProblems=[];
+  for(const id of Object.keys(concepts))for(const mobile of [false,true])for(const font of ['system-ui','DejaVu Sans','Liberation Sans']){
     const svg=await readFile(`dist/concepts/${id}${mobile?'-mobile':''}.svg`,'utf8');
     await page.setContent(`<style>body{margin:0}svg{display:block;width:${mobile?344:688}px}</style>${svg}`);
+    await page.locator('svg').evaluate((svg,font)=>svg.style.fontFamily=font,font);
     const problems=await page.locator('svg').evaluate(svg=>{
       const problems=[];
       for(const group of svg.querySelectorAll('.box')){
@@ -294,6 +296,7 @@ test('concept SVG labels fit their nodes and responsive panels',async({page})=>{
       }
       return problems;
     });
-    expect(problems,`${id}${mobile?' mobile':''}`).toEqual([]);
+    allProblems.push(...problems.map(problem=>`${id}${mobile?' mobile':''} (${font}): ${problem}`));
   }
+  expect(allProblems).toEqual([]);
 });

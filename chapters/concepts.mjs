@@ -7,7 +7,7 @@ export const concepts={
     caption:'The dashed boundary groups changes that must share an outcome. Atomicity prevents half a transfer; the application must still choose the right accounts and amount. Check the total and the intended result separately.',
     scenes:[
       {title:'Group the related writes',items:[T(12,15,'Before: Alice 100 · Bob 100'),C(4,39,312,184,'One database transaction'),B(20,75,280,56,'Debit Alice','100 − 30 = 70'),A('M160 133 V151'),B(20,155,280,56,'Credit Bob','100 + 30 = 130'),T(12,245,'A durable commit makes the complete\ntransaction recoverable.',40)]},
-      {title:'Verify two different promises',items:[B(4,4,312,68,'COMMIT → 70 / 130','Total = 200; intended transfer holds','safe'),B(4,94,312,68,'ABORT → 100 / 100','No partial transfer is retained'),B(4,184,312,68,'Wrong code → 100 / 100','Total = 200; intended transfer fails','danger')]}
+      {title:'Verify both promises',items:[B(4,4,312,68,'COMMIT → 70 / 130','Total = 200; intended transfer holds','safe'),B(4,94,312,68,'ABORT → 100 / 100','No partial transfer is retained'),B(4,184,312,68,'Wrong code → 100 / 100','Total = 200; intended transfer fails','danger')]}
     ]
   },
   publication:{
@@ -24,8 +24,8 @@ export const concepts={
     alt:'With one bicycle, a separate read can let two clients both decide yes. A conditional update holds write protection while checking stock and decrementing it. Only the request that updates a row creates a reservation, in the same transaction.',
     caption:'A CHECK on stock prevents negative values; it does not connect stock to a particular reservation. The conditional write and reservation insert must share a transaction. Under contention, follow the database’s isolation rules and retry a rejected whole decision.',
     scenes:[
-      {title:'A separate check can go stale',items:[B(4,4,148,66,'Client A','Reads stock = 1'),B(168,4,148,66,'Client B','Reads stock = 1'),A('M78 72 V109'),A('M242 72 V109'),B(4,115,148,66,'Decides yes','Based on old read','danger'),B(168,115,148,66,'Decides yes','Based on old read','danger'),T(12,222,'Both applications can promise the\nsame item before either writes.',38)]},
-      {title:'Make test + change one operation',items:[B(4,4,312,68,'Protected conditional write','UPDATE … WHERE stock > 0'),A('M160 74 V101'),B(4,108,312,68,'Inspect affected rows','1 → insert reservation; 0 → sold out','safe'),A('M160 178 V205'),B(4,212,312,60,'Commit stock + reservation','One local transaction','safe')]}
+      {title:'Separate checks can go stale',items:[B(4,4,148,66,'Client A','Reads stock = 1'),B(168,4,148,66,'Client B','Reads stock = 1'),A('M78 72 V109'),A('M242 72 V109'),B(4,115,148,66,'Decides yes','Based on old read','danger'),B(168,115,148,66,'Decides yes','Based on old read','danger'),T(12,222,'Both applications can promise the\nsame item before either writes.',38)]},
+      {title:'Test and change together',items:[B(4,4,312,68,'Protected conditional write','UPDATE … WHERE stock > 0'),A('M160 74 V101'),B(4,108,312,68,'Inspect affected rows','1 → insert reservation; 0 → sold out','safe'),A('M160 178 V205'),B(4,212,312,60,'Commit stock + reservation','One local transaction','safe')]}
     ]
   },
   mvcc:{
@@ -34,7 +34,7 @@ export const concepts={
     caption:'xmin names the creator; tuple xmax names the transaction that superseded a version. A snapshot combines an allocation boundary, IDs active at capture, and transaction status to select a version. Committing now does not make a version visible to every older snapshot.',
     scenes:[
       {title:'UPDATE extends the history',items:[B(4,4,312,74,'Old tuple: balance 100','xmin = earlier committed transaction\nxmax = T2'),A('M160 80 V111','new version, same logical row',28,101),B(4,118,312,74,'New tuple: balance 70','xmin = T2; xmax = none'),T(12,232,'T2 commits; both tuples can remain.\nCommit changes visibility, not every\nreader’s snapshot.',38)]},
-      {title:'Snapshots choose different tuples',items:[B(4,4,312,68,'Old snapshot → 100','T2 was not visible at capture','safe'),B(4,98,312,68,'New snapshot → 70','Captured after T2 committed','safe'),L(4,194,316,194,'dashed'),T(12,224,'Vacuum cannot remove 100 while\nan active snapshot still needs it.\nStorage cleanup follows visibility.',38)]}
+      {title:'Snapshots select versions',items:[B(4,4,312,68,'Old snapshot → 100','T2 was not visible at capture','safe'),B(4,98,312,68,'New snapshot → 70','Captured after T2 committed','safe'),L(4,194,316,194,'dashed'),T(12,224,'Vacuum cannot remove 100 while\nan active snapshot still needs it.\nStorage cleanup follows visibility.',38)]}
     ]
   },
   lostUpdate:{
@@ -43,7 +43,7 @@ export const concepts={
     caption:'Read the two columns from top to bottom in time. Serializing the final assignments still loses an update because both assignments contain the same old calculation. Protect the read–decide–write operation or move the computation into an appropriate atomic database operation.',
     scenes:[
       {title:'Stale assignments overwrite',items:[T(16,16,'Client A',15,'label'),T(184,16,'Client B',15,'label'),B(4,37,148,62,'Read 2','Compute 2 − 1'),B(168,37,148,62,'Read 2','Compute 2 − 1'),A('M78 102 V139'),A('M242 102 V177'),B(4,145,148,56,'Write 1','Reservation 1'),B(168,183,148,56,'Write 1','Reservation 2','danger'),T(12,271,'Final stock 1, reservations 2: wrong.',40)]},
-      {title:'Compute against protected state',items:[B(4,4,312,62,'A: stock = stock − 1','Protected current row: 2 → 1','safe'),A('M160 72 V108','next writer uses the new value',24,96),B(4,115,312,62,'B: stock = stock − 1','Protected current row: 1 → 0','safe'),T(12,224,'Final stock 0, reservations 2.\nFor the last item, also test stock > 0\nand commit the reservation with it.',39)]}
+      {title:'Use the protected current row',items:[B(4,4,312,62,'A: stock = stock − 1','Protected current row: 2 → 1','safe'),A('M160 72 V108','next writer uses the new value',24,96),B(4,115,312,62,'B: stock = stock − 1','Protected current row: 1 → 0','safe'),T(12,224,'Final stock 0, reservations 2.\nFor the last item, also test stock > 0\nand commit the reservation with it.',39)]}
     ]
   },
   writeSkew:{
@@ -51,8 +51,8 @@ export const concepts={
     alt:'Doctors A and B both see A on call and B on call. A turns its own row off because it read B on; B turns its own row off because it read A on. The writes touch different rows, but both off violates the rule. Read/write dependencies form a cycle.',
     caption:'Each arrow goes from a reader of an old version to the writer that invalidates that observation. Stable snapshots and disjoint writes do not by themselves serialize a cross-row decision. The model rejects a dependency cycle; PostgreSQL SSI uses a different detection algorithm.',
     scenes:[
-      {title:'Both decisions look safe locally',items:[B(4,4,312,56,'Shared starting snapshot','A on; B on'),A('M78 62 V96'),A('M242 62 V96'),B(4,104,148,94,'A leaves','Read B = on\nWrite A = off'),B(168,104,148,94,'B leaves','Read A = on\nWrite B = off'),B(4,228,312,54,'Combined: both off','No on-call doctor remains','danger')]},
-      {title:'The dependency cycle explains why',items:[B(4,84,112,66,'Tx A','Reads B on'),B(204,84,112,66,'Tx B','Reads A on'),A('M116 98 Q160 4 204 98','A read B’s old row',81,42,'danger'),A('M204 138 Q160 232 116 138','B read A’s old row',81,218,'danger'),T(12,264,'A serial order cannot justify both\nobservations and both decisions.',38)]}
+      {title:'Each decision looks safe',items:[B(4,4,312,56,'Shared starting snapshot','A on; B on'),A('M78 62 V96'),A('M242 62 V96'),B(4,104,148,94,'A leaves','Read B = on\nWrite A = off'),B(168,104,148,94,'B leaves','Read A = on\nWrite B = off'),B(4,228,312,54,'Combined: both off','No on-call doctor remains','danger')]},
+      {title:'Find the dependency cycle',items:[B(4,84,112,66,'Tx A','Reads B on'),B(204,84,112,66,'Tx B','Reads A on'),A('M116 98 Q160 4 204 98','A read B’s old row',81,42,'danger'),A('M204 138 Q160 232 116 138','B read A’s old row',81,218,'danger'),T(12,264,'A serial order cannot justify both\nobservations and both decisions.',38)]}
     ]
   },
   validation:{
@@ -60,7 +60,7 @@ export const concepts={
     alt:'A transaction reads key x at version 7 and stages a private write. Before publishing, it compares observed version 7 with the current version. A match permits this version check; current version 8 requires abort and a fresh attempt. Validation and publication must be protected together.',
     caption:'The compared numbers are versions, not values. A changed version means the decision used stale information. In this model, validating the read set and publishing the write set form one protected step. More general serializability also needs correct handling of predicates and concurrent validators.',
     scenes:[
-      {title:'Remember what the decision read',items:[B(4,4,312,62,'Read x at version 7','Record dependency: x → 7'),A('M160 70 V99'),B(4,106,312,62,'Compute using that observation','Stage a private write; publish nothing'),T(12,216,'Other transactions may commit\nwhile this transaction computes.',38)]},
+      {title:'Record the read versions',items:[B(4,4,312,62,'Read x at version 7','Record dependency: x → 7'),A('M160 70 V99'),B(4,106,312,62,'Compute using that observation','Stage a private write; publish nothing'),T(12,216,'Other transactions may commit\nwhile this transaction computes.',38)]},
       {title:'Compare before publishing',items:[B(4,4,312,60,'Observed version = 7','Compare with current x version'),A('M78 66 V111','7 = 7',36,94),A('M242 66 V111','7 ≠ 8',200,94,'danger'),B(4,118,148,86,'Match','Publish in the\nprotected step','safe'),B(168,118,148,86,'Conflict','Abort; reread\nand recompute','danger'),T(12,250,'A check separated from publication\ncan itself race with another writer.',38)]}
     ]
   },
@@ -78,7 +78,7 @@ export const concepts={
     alt:'An attempt reads two doctors and decides to leave, but validation aborts it after someone else leaves. Reusing that old decision can remove the last doctor. A correct retry starts a new transaction, reads the current one-doctor roster, and decides to stay.',
     caption:'An abort invalidates the decision’s inputs. The retry boundary goes around begin, read, decide, write and commit. External effects need stable identity or durable intent because a database rollback cannot retract an already delivered request.',
     scenes:[
-      {title:'An abort invalidates the decision',items:[B(4,4,312,68,'Attempt 1: read 2 doctors','Decide: I can leave'),A('M160 76 V106'),B(4,114,312,68,'Another doctor leaves first','Validation rejects this attempt','danger'),T(12,236,'Reusing “I can leave” repeats\nthe stale assumption.',38)]},
+      {title:'An abort invalidates inputs',items:[B(4,4,312,68,'Attempt 1: read 2 doctors','Decide: I can leave'),A('M160 76 V106'),B(4,114,312,68,'Another doctor leaves first','Validation rejects this attempt','danger'),T(12,236,'Reusing “I can leave” repeats\nthe stale assumption.',38)]},
       {title:'A new attempt asks again',items:[C(4,4,312,230,'Whole retry boundary'),B(20,42,280,56,'Begin → read current roster','Only 1 doctor remains'),A('M160 104 V131'),B(20,138,280,70,'Recompute → commit','Stay on call; make no unsafe write','safe'),T(12,269,'Bound retries and handle exhaustion.',40)]}
     ]
   },
@@ -88,7 +88,7 @@ export const concepts={
     caption:'Read each lane as a lock ownership interval, not a measured benchmark. Finer locks improve concurrency only when the invariant can safely be protected at that granularity. Shorter lock hold time also reduces the queue.',
     scenes:[
       {title:'One lock, one queue',items:[B(4,4,312,62,'Global lock held by request A','A works on key x'),A('M160 74 V102'),B(4,110,312,62,'B waits for the global lock','B only needs unrelated key y'),B(4,196,312,62,'C waits behind B','C also needs x'),T(12,283,'Unrelated work still waits.',38)]},
-      {title:'Independent keys, separate lanes',items:[T(12,16,'Lock x',18,'label'),T(182,16,'Lock y',18,'label'),B(4,38,148,80,'A running','C waits for x'),B(168,38,148,80,'B running','No x conflict','safe'),T(12,181,'Parallel progress is safe only if\nthe protected decisions are independent.',39),T(12,252,'A rule over x + y needs a protocol\nthat protects the combined decision.',39)]}
+      {title:'Separate independent keys',items:[T(12,16,'Lock x',18,'label'),T(182,16,'Lock y',18,'label'),B(4,38,148,80,'A running','C waits for x'),B(168,38,148,80,'B running','No x conflict','safe'),T(12,181,'Parallel progress is safe only if\nthe protected decisions are independent.',39),T(12,252,'A rule over x + y needs a protocol\nthat protects the combined decision.',39)]}
     ]
   },
   files:{
@@ -96,8 +96,8 @@ export const concepts={
     alt:'First write a temporary file and fsync its contents. Rename switches the visible target name atomically. Then fsync the containing directory to persist that name change before acknowledging success. A rename alone does not establish power-loss durability.',
     caption:'Follow the two kinds of state: file contents and the directory entry that names them. This is the course’s same-filesystem replacement protocol under its stated persistence assumptions; the native exercise tests process interruption, which is weaker than power loss.',
     scenes:[
-      {title:'Prepare complete new contents',items:[B(4,4,312,64,'Write temporary file','New bytes enter the OS cache'),A('M160 72 V108','fsync temporary file',64,96),B(4,116,312,68,'New file contents persisted','The old target name still exists','safe'),T(12,236,'No reader needs to see a partly\nwritten replacement.',38)]},
-      {title:'Publish, then persist the name',items:[B(4,4,312,64,'rename(temp, target)','Visible name switches atomically'),A('M160 76 V108','fsync containing directory',42,98),B(4,116,312,68,'Replacement name persisted','Contents and name are recoverable','safe'),A('M160 192 V227'),T(58,253,'Now acknowledge success',30,'label')]}
+      {title:'Persist the new file contents',items:[B(4,4,312,64,'Write temporary file','New bytes enter the OS cache'),A('M160 72 V108','fsync temporary file',64,96),B(4,116,312,68,'New file contents persisted','The old target name still exists','safe'),T(12,236,'No reader needs to see a partly\nwritten replacement.',38)]},
+      {title:'Persist the replacement name',items:[B(4,4,312,64,'rename(temp, target)','Visible name switches atomically'),A('M160 76 V108','fsync containing directory',42,98),B(4,116,312,68,'Replacement name persisted','Contents and name are recoverable','safe'),A('M160 192 V227'),T(58,253,'Now acknowledge success',30,'label')]}
     ]
   },
   wal:{
@@ -105,8 +105,8 @@ export const concepts={
     alt:'A dirty page at pageLSN 42 may reach storage only after log record 42 is durable. Separately, durable acknowledgement waits for the transaction commit record. Data pages can be flushed later; after a crash, redo reinstalls committed updates absent from disk.',
     caption:'There are two ordering rules. Log-before-page preserves recovery information, including for an uncommitted page flush. Commit-record-before-acknowledgement makes a durable commit recoverable. Commit does not require every data page to be flushed in a no-force design.',
     scenes:[
-      {title:'Before any changed page flush',items:[B(4,4,312,64,'Append update at LSN 42','Buffer page now has pageLSN = 42'),A('M160 76 V108','flush log through at least 42',37,98),B(4,116,312,60,'Recovery record is durable','WAL barrier crossed','safe'),A('M160 188 V216'),B(4,224,312,58,'Page flush is now permitted','Disk may now contain that update')]},
-      {title:'Before durable success to caller',items:[B(4,4,312,64,'Append COMMIT at LSN 45','This transaction has one outcome'),A('M160 76 V108','flush log through 45',66,98),B(4,116,312,60,'Acknowledge durable commit','Data pages may still be old','safe'),T(12,232,'After a crash, durable log records\nlet redo restore missing page changes.\nAn unflushed log tail can be lost.',39)]}
+      {title:'Log before a page flush',items:[B(4,4,312,64,'Append update at LSN 42','Buffer page now has pageLSN = 42'),A('M160 76 V108','flush log through at least 42',37,98),B(4,116,312,60,'Recovery record is durable','WAL barrier crossed','safe'),A('M160 188 V216'),B(4,224,312,58,'Page flush is now permitted','Disk may now contain that update')]},
+      {title:'Commit before durable success',items:[B(4,4,312,64,'Append COMMIT at LSN 45','This transaction has one outcome'),A('M160 76 V108','flush log through 45',66,98),B(4,116,312,60,'Acknowledge durable commit','Data pages may still be old','safe'),T(12,232,'After a crash, durable log records\nlet redo restore missing page changes.\nAn unflushed log tail can be lost.',39)]}
     ]
   },
   recovery:{
@@ -114,8 +114,8 @@ export const concepts={
     alt:'No-force allows a committed update to remain only in a lost buffer, so redo restores its durable logged value. Steal allows an uncommitted update to have reached disk, so undo removes the loser’s effect. A pageLSN guard prevents a redo record from being applied twice.',
     caption:'The two policies create different recovery jobs. “Redo” does not mean blindly adding a change again: inspect the durable page’s pageLSN and the log record’s LSN before applying it. The foundation model uses before/after images; the optional ARIES lab adds compensation records.',
     scenes:[
-      {title:'No-force → redo missing changes',items:[B(4,4,312,66,'Durable COMMIT + update log','Buffer lost; disk still holds 100'),A('M160 76 V108','redo only if the page is behind',24,98),B(4,116,312,66,'Reinstall committed value 70','Advance pageLSN with the page','safe'),T(12,230,'Already at this record’s LSN? Skip.\nRepeated recovery must converge.',39)]},
-      {title:'Steal → undo unfinished work',items:[B(4,4,312,66,'No durable COMMIT','Uncommitted 70 reached disk','danger'),A('M160 76 V108','undo using recovery information',26,98),B(4,116,312,66,'Restore the loser’s old value','Retain committed transactions','safe'),T(12,230,'Analysis finds unfinished work.\nRedo and undo restore one outcome.',39)]}
+      {title:'No-force needs redo',items:[B(4,4,312,66,'Durable COMMIT + update log','Buffer lost; disk still holds 100'),A('M160 76 V108','redo only if the page is behind',24,98),B(4,116,312,66,'Reinstall committed value 70','Advance pageLSN with the page','safe'),T(12,230,'Already at this record’s LSN? Skip.\nRepeated recovery must converge.',39)]},
+      {title:'Steal needs undo',items:[B(4,4,312,66,'No durable COMMIT','Uncommitted 70 reached disk','danger'),A('M160 76 V108','undo using recovery information',26,98),B(4,116,312,66,'Restore the loser’s old value','Retain committed transactions','safe'),T(12,230,'Analysis finds unfinished work.\nRedo and undo restore one outcome.',39)]}
     ]
   },
   twoPhase:{
@@ -123,8 +123,8 @@ export const concepts={
     alt:'In phase one, each participant persists PREPARED before voting yes and retains required resources. In phase two, the coordinator durably records COMMIT before telling participants. If one participant receives COMMIT and another times out, the prepared participant must wait for authoritative resolution.',
     caption:'Trace the durable writes before the messages that rely on them. A YES vote promises the participant can obey the eventual decision after a restart. A timeout says that communication failed; it does not prove that the global decision was abort.',
     scenes:[
-      {title:'Phase 1: collect durable promises',items:[B(4,4,312,56,'Coordinator sends PREPARE','Ask every required participant'),A('M78 64 V106'),A('M242 64 V106'),B(4,114,148,86,'Participant A','Persist PREPARED\nThen vote YES'),B(168,114,148,86,'Participant B','Persist PREPARED\nThen vote YES'),T(12,249,'Prepared participants retain enough\nstate and resources to honor either\nauthoritative final decision.',39)]},
-      {title:'Phase 2: distribute the outcome',items:[B(4,4,312,62,'Coordinator persists COMMIT','Only after all required YES votes','safe'),A('M78 76 V131','COMMIT',30,104),A('M242 76 V131','message lost',188,104,'danger'),B(4,139,148,80,'A commits','Final decision\nreceived','safe'),B(168,139,148,80,'B waits','Still PREPARED\nCannot guess','danger'),T(12,266,'Recovery resends the stable decision.',40)]}
+      {title:'Phase 1: promise, then vote',items:[B(4,4,312,56,'Coordinator sends PREPARE','Ask every required participant'),A('M78 64 V106'),A('M242 64 V106'),B(4,114,148,86,'Participant A','Persist PREPARED\nThen vote YES'),B(168,114,148,86,'Participant B','Persist PREPARED\nThen vote YES'),T(12,249,'Prepared participants retain enough\nstate and resources to honor either\nauthoritative final decision.',39)]},
+      {title:'Phase 2: record, then tell',items:[B(4,4,312,62,'Coordinator persists COMMIT','Only after all required YES votes','safe'),A('M78 76 V131','COMMIT',30,104),A('M242 76 V131','message lost',188,104,'danger'),B(4,139,148,80,'A commits','Final decision\nreceived','safe'),B(168,139,148,80,'B waits','Still PREPARED\nCannot guess','danger'),T(12,266,'Recovery resends the stable decision.',40)]}
     ]
   },
   replication:{
@@ -150,7 +150,7 @@ export const concepts={
     alt:'A server commits a charge with request key k and records the payload and result, but its reply is lost. Retrying the same key and payload returns the recorded result instead of another charge. Reusing the key for a different payload is rejected; effect and identity record must share the relevant atomic boundary.',
     caption:'Follow identity k across attempts. The durable identity/result record converts an ambiguous outcome into a lookup. Protect the first execution against concurrent duplicates and bind the key to the payload. An external provider must offer the corresponding guarantee at its own boundary.',
     scenes:[
-      {title:'The uncertainty is at the client',items:[B(4,4,312,58,'Client sends key k, amount 30','One intended charge'),A('M160 68 V104'),B(4,112,312,66,'Server commits charge + result','k → payload 30, result receipt R','safe'),A('M160 190 V224','reply lost',121,216,'danger'),T(20,254,'Timeout: outcome is unknown',36,'label')]},
+      {title:'The client cannot tell',items:[B(4,4,312,58,'Client sends key k, amount 30','One intended charge'),A('M160 68 V104'),B(4,112,312,66,'Server commits charge + result','k → payload 30, result receipt R','safe'),A('M160 190 V224','reply lost',121,216,'danger'),T(20,254,'Timeout: outcome is unknown',36,'label')]},
       {title:'Retry the same identity',items:[B(4,4,312,58,'Retry k with amount 30','Find committed request/result record'),A('M160 70 V105'),B(4,113,312,66,'Return receipt R','Do not perform a second charge','safe'),B(4,215,312,62,'Retry k with amount 40','Reject conflicting payload','danger')]}
     ]
   },
@@ -159,8 +159,8 @@ export const concepts={
     alt:'Inventory reservation commits before payment is attempted. If payment is declined, a later release operation must compensate the reservation. The release can also fail or succeed with a lost reply, so the workflow must persist pending compensation and retry with stable identity. This is not rollback of the earlier transaction.',
     caption:'Each box has its own local commit. Other actors may observe those committed states. Compensation is a business action with its own failure modes; keep it pending until an authoritative result is recorded, and define what to do if the action cannot fully reverse the original effect.',
     scenes:[
-      {title:'The earlier action is committed',items:[B(4,4,312,58,'Reserve stock: COMMIT','Reservation now exists','safe'),A('M160 70 V102'),B(4,110,312,62,'Attempt payment','Payment is declined','danger'),A('M160 184 V216'),B(4,224,312,56,'Need a new release operation','Rollback cannot erase the old commit')]},
-      {title:'Persist unfinished compensation',items:[B(4,4,312,60,'Workflow: release pending','Store reservation and operation IDs'),A('M160 72 V106','retry safely after failure',58,95),B(4,114,312,68,'Release reservation','Idempotent compensation action'),A('M160 194 V221'),B(4,229,312,54,'Record confirmed completion','Do not declare recovery early','safe')]}
+      {title:'The first action is committed',items:[B(4,4,312,58,'Reserve stock: COMMIT','Reservation now exists','safe'),A('M160 70 V102'),B(4,110,312,62,'Attempt payment','Payment is declined','danger'),A('M160 184 V216'),B(4,224,312,56,'Need a new release operation','Rollback cannot erase the old commit')]},
+      {title:'Persist pending compensation',items:[B(4,4,312,60,'Workflow: release pending','Store reservation and operation IDs'),A('M160 72 V106','retry safely after failure',58,95),B(4,114,312,68,'Release reservation','Idempotent compensation action'),A('M160 194 V221'),B(4,229,312,54,'Record confirmed completion','Do not declare recovery early','safe')]}
     ]
   },
   design:{
@@ -177,8 +177,8 @@ export const concepts={
     alt:'Transaction T2 has UPDATE 5, UPDATE 8 with prevLSN 5, and ABORT 11 with prevLSN 8. Undoing UPDATE 8 appends CLR 13: prevLSN 11 follows transaction log order; undoNextLSN 5 skips the already compensated UPDATE 8. Restart redoes durable compensation if missing from the page, then follows the skip pointer for remaining undo.',
     caption:'A compensation log record (CLR) describes a redo-only recovery action. Its prevLSN preserves transaction history; its undoNextLSN identifies where rollback should resume. The CLR obeys WAL too: make it durable before its changed page can reach storage. This diagram is the advanced continuation of redo/undo.',
     scenes:[
-      {title:'Append compensation to history',items:[B(4,4,312,58,'UPDATE 5: B += 20','Earlier unfinished change by T2'),A('M160 66 V87'),B(4,94,312,58,'UPDATE 8: B += 5','prevLSN = 5'),A('M160 160 V181'),B(4,188,312,58,'ABORT 11','prevLSN = 8'),T(12,278,'Chronology runs down; prevLSN goes back.',42)]},
-      {title:'Two links, two different jobs',items:[B(4,4,312,78,'CLR 13: B −= 5','Compensates UPDATE 8; redo-only\nprevLSN = 11; undoNextLSN = 5','safe'),A('M80 90 V137','history link',12,119),A('M240 90 V137','undo skip link',184,119),B(4,145,148,64,'ABORT 11','prevLSN target'),B(168,145,148,64,'UPDATE 5','Resume undo','safe'),T(12,249,'Restart: redo missing CLR action,\nthen continue undo at 5, not at 8.',39)]}
+      {title:'Append a compensation record',items:[B(4,4,312,58,'UPDATE 5: B += 20','Earlier unfinished change by T2'),A('M160 66 V87'),B(4,94,312,58,'UPDATE 8: B += 5','prevLSN = 5'),A('M160 160 V181'),B(4,188,312,58,'ABORT 11','prevLSN = 8'),T(12,278,'Time runs down; prevLSN points back.',39)]},
+      {title:'Two links have different jobs',items:[B(4,4,312,78,'CLR 13: B −= 5','Compensates UPDATE 8; redo-only\nprevLSN = 11; undoNextLSN = 5','safe'),A('M80 90 V137','history link',12,119),A('M240 90 V137','undo skip link',184,119),B(4,145,148,64,'ABORT 11','prevLSN target'),B(168,145,148,64,'UPDATE 5','Resume undo','safe'),T(12,249,'Restart: redo missing CLR action,\nthen continue undo at 5, not at 8.',39)]}
     ]
   }
 };

@@ -134,6 +134,10 @@ text, precedes prediction, selects the correct responsive SVG and does not widen
 the page. A second check measures labels inside every node and panel in all 40
 SVG assets. Review fixes included three overflowing node labels, larger mobile
 text, stacked mobile panels and the local server's missing SVG MIME type.
+The first Actions run caught a heading overflow under its system font. Shorter
+panel headings fix that crowding; label checks now also exercise DejaVu Sans and
+Liberation Sans so differences from the local system font remain covered. That
+check also caught and shortened an advanced ARIES mobile annotation.
 
 Desktop and mobile figure captures are saved as `concept-<id>-1440.png` and
 `concept-<id>-390.png`. Full-page WAL desktop and MVCC mobile captures show the
