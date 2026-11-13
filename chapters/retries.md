@@ -28,6 +28,12 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>A retry callback must not send an email or initiate a new payment on each attempt unless that effect has its own stable identity and recovery strategy.</p></details>
 <details><summary>Worked explanation</summary><p>A serialization failure protects the aborted attempt. It cannot repair a stale decision retained in application memory. The repaired transaction reevaluates the business predicate with fresh state. Retry the complete decision and all its local writes, while classifying errors: sold out, a unique-key conflict and a transient serialization failure do not necessarily mean the same thing.</p></details>
 
+## Under the hood: validation fails before publication
+
+An optimistic engine records dependencies while executing. At commit it compares them with current versions, discards an invalid attempt's private writes and reports a conflict. A serializable database may instead detect a dangerous dependency structure during execution or commit. In either case, the application decision made from invalidated observations must be recomputed.
+
+The [validation engine](./validation.html) shows the read set, private writes, current versions and the exact failed comparison. Its check-and-publish boundary is one ordered event. The retry loop belongs above that engine: it creates a new descriptor, takes fresh observations and rebuilds the decision. An external effect requires its own durable identity because discarding a local write set cannot discard a separate service's committed operation.
+
 ## Transfer the idea
 
 A transfer service calculates a currency quote before opening the transaction. Decide whether a retry can reuse it, whether it has an expiry, and which account/limit checks must be repeated. Specify what the client sees when retries are exhausted.

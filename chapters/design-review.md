@@ -55,6 +55,14 @@ For each case below, state the last durable fact, the next safe action, the cust
 <details><summary>Hint 2 · Ask for a counterexample</summary><p>For each claimed guarantee, try removing one assumed mechanism or moving one crash before/after a durable write. If the claim survives every removal, it may be too vague to test.</p></details>
 <details><summary>What a defensible answer includes</summary><p>Conditional inventory reservation and the reservation record commit locally; payment uses a durable stable key and recoverable result; a workflow reconciles successful payments with pending orders; paid status and an outbox intent commit together; the relay can repeat delivery; the consumer atomically stores its inbox identity with its effect. Cancellation and expiry have explicit versions and compensation paths. This is one possible design, not a single global ACID transaction. It still needs resource limits, retry budgets, retention policy, observability and tests against the real components.</p></details>
 
+## Defend the mechanism as well as the design
+
+Include your six implementation-bench functions and their named-case results. Choose one guarantee and trace it end to end through transaction descriptor, read visibility or lock/validation metadata, tentative writes, recovery records and acknowledgement. Identify the exact publication or durable-record boundary at each layer.
+
+Show a tuple header and snapshot calculation, a lock-table or version-validation conflict, and a pageLSN/log recovery decision. For a distributed claim, include term/index pairs, an election check and the committed decision record, then distinguish that record from participant-local commit. Say which production details your small engines deliberately omit.
+
+Finally propose one extension to implement yourself: predicate/range validation, a safe version-retention horizon, CLRs for interrupted undo, or retransmitted two-phase decision messages. Provide data structures, transition rules, an adversarial schedule and independent verification criteria before coding it.
+
 ## Transfer the idea
 
 Choose a different system: a document index, account provisioning or a multi-file package update. Reuse the design questions, replacing the checkout-specific mechanisms where needed. Explain which guarantees can be weaker and why the business requirement permits that change.

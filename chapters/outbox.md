@@ -28,6 +28,14 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>A unique outbox row prevents duplicate intent. It does not prove only one delivery or one external effect.</p></details>
 <details><summary>Worked explanation</summary><p>The outbox closes the gap between the local database state and durable publication intent. It trades an unsafe dual write for a recoverable relay workflow. Publication may be repeated, so the end-to-end contract still needs stable event identities, ordering policy, retention and sink behavior. A paid order with no event is a different failure from two deliveries with one deduplicated effect.</p></details>
 
+## Under the hood: one local write set, two recovery loops
+
+The order row and outbox row share the database's local transaction manager, visibility and WAL commit path. The relay scans committed outbox intent, sends an event and records progress. A crash after the send but before its progress commit leaves recoverable work that may be sent again.
+
+An inbox repair requires the consumer to insert the event identity and apply its local effect in one consumer-side transaction. If the inbox marker commits first and the effect later, a crash can suppress needed work. If the effect happens first and the marker later, a retry can duplicate it. The marker/effect pair needs the same atomic publication and recovery reasoning as any other local transaction.
+
+Trace this using the [private write-set manager](./transaction-manager.html) and [WAL engine](./recovery-engine.html). The broker and HTTP effects do not become part of those local write sets just because application code calls them inside a transaction function.
+
 ## Transfer the idea
 
 Add cancellation. A payment event and cancellation event can be delivered out of order. Propose per-order versions and explain how the consumer avoids reopening a cancelled order. Decide when outbox and inbox records can safely expire.

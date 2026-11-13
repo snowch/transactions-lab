@@ -4,12 +4,14 @@ import {readFile,access} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
 import {labs,pages} from '../scripts/catalog.mjs';
 import {definitions} from '../web/models.js';
+import {benches} from '../web/benchmarks.js';
 test('all investigations offer experiment, feedback, transfer and design record',async()=>{
-  assert.equal(labs.length,18);
+  assert.equal(labs.length,24);
   for(const lab of labs){
     const source=await readFile(lab.file,'utf8'),html=await readFile(`dist/${lab.slug}.html`,'utf8');
     assert.match(source,/Transfer the idea/);assert.match(source,/<details>/);assert.match(html,/data-note="invariant"/);
     if(lab.model){assert.ok(definitions[lab.model]);assert.match(html,/class="experiment"/);assert.ok(!html.includes('<!-- experiment -->'));}
+    if(benches[lab.model]){assert.match(html,/class="implementation-bench"/);assert.match(html,/Read the engine code executed/);assert.ok(!html.includes('<!-- implementation -->'));}
     assert.ok(source.length>1500,`${lab.slug}: substantive investigation`);
   }
 });

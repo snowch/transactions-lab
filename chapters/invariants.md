@@ -48,6 +48,14 @@ The original published sequence deliberately returns false. Your repair should m
 <details><summary>Hint 2 · Keep two kinds of checks</summary><p>Use a general invariant for every transfer and a specific expected outcome for this request. Neither replaces the other.</p></details>
 <details><summary>Worked explanation</summary><p>The first transaction debits and credits Alice, leaving both balances at 100. It conserves money and respects the row constraints, but fails the requested effect. Crediting Bob produces 70 and 130. An explicit transaction makes the chosen statements atomic; it does not choose the right statements for you.</p></details>
 
+## Under the hood: who enforces which rule?
+
+A CHECK constraint is evaluated against the proposed row during statement execution. A primary/unique key normally has an index-backed enforcement path that coordinates conflicting inserts. These mechanisms can reject a local invalid write; they do not infer that the programmer meant to credit Bob rather than Alice.
+
+The engine also tracks a transaction descriptor and its tentative effects. Atomic commit publishes or abandons those effects together. That publication mechanism and the business postcondition are separate pieces: an atomic execution of the wrong statements is still the wrong transfer.
+
+[Build the descriptor and publication mechanism next →](./transaction-manager.html)
+
 ## Transfer the idea
 
 Add a fee account. Define the conservation rule for a transfer of 30 with a fee of 2, stating who pays it. Write expected individual balances and a query that would catch a fee accidentally credited to Bob. Record which checks are enforced by the database and which your application or verifier must enforce.

@@ -1,3 +1,4 @@
+import './bench-ui.js';
 import './experiments.js';
 const menu = document.querySelector('#menu');
 const sidebar = document.querySelector('#sidebar');

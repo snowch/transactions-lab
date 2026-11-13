@@ -28,6 +28,16 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>After a durable YES vote, unilateral timeout abort is unsafe without another protocol rule that establishes the global outcome.</p></details>
 <details><summary>Worked explanation</summary><p>Two-phase commit first obtains durable promises, then communicates one durable decision. The waiting repair preserves atomic agreement while blocking B. Recovery of the existing COMMIT lets B finish. Durable participant state, decision retention, coordinator recovery and operational handling of prepared work belong in the design. Atomic commit alone does not specify all isolation between transactions.</p></details>
 
+## Under the hood: promises must reach stable storage first
+
+PREPARE is a local recovery boundary. A participant flushes enough state to finish later before sending YES; its prepared record and held resources survive the uncertainty window. The coordinator flushes one decision before notifying participants. A participant can then install that decision, record completion and release resources according to its local protocol.
+
+The trace exposes each participant's stable log, coordinator records, messages and resource retention. Coordinator restart reads its durable COMMIT; it does not invent a decision from elapsed time. The panel is a global observer's view: B cannot directly inspect an unreachable coordinator's log merely because you can see it in the model.
+
+<!-- mechanism-source -->
+
+A real system also needs transaction identities, participant lists, duplicate-message handling and a policy for forgetting resolved state. The [replicated-log engine](./replicated-log.html) shows how a recorded decision can survive a leader failure. It does not make an unprepared participant's YES vote appear.
+
 ## Transfer the idea
 
 Change the history so B votes NO before the decision. Specify the coordinator’s outcome and what A must retain while waiting. Then describe what happens if the coordinator loses its durable storage rather than merely restarting.

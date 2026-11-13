@@ -1,3 +1,4 @@
+import {renderInternals} from './internals-view.js';
 import {definitions,runModel,recoverModel} from './models.js';
 const page=document.body.dataset.page;
 const revision=__BUILD_REVISION__;
@@ -6,10 +7,11 @@ const save=(value,name,type='application/json')=>{const url=URL.createObjectURL(
 for(const el of document.querySelectorAll('.experiment')){
   const id=el.dataset.model,config=el.querySelector('.config'),preset=el.querySelector('.preset'),status=el.querySelector('.model-status');
   let run=null,cursor=-1,recovery=null,submitted='',history=[];
-  const invalidate=()=>{run=null;cursor=-1;recovery=null;submitted='';el.querySelector('.trace').replaceChildren();el.querySelector('.model-state').textContent='No execution yet.';el.querySelector('.checks').replaceChildren();el.querySelector('.export-run').disabled=true;status.textContent='Settings changed. Make a prediction, then run the new configuration.';};
+  const invalidate=()=>{run=null;cursor=-1;recovery=null;submitted='';el.querySelector('.trace').replaceChildren();el.querySelector('.model-state').textContent='No execution yet.';el.querySelector('.checks').replaceChildren();el.querySelector('.internals-view').replaceChildren();el.querySelector('.export-run').disabled=true;status.textContent='Settings changed. Make a prediction, then run the new configuration.';};
   const render=()=>{
     const step=recovery||run.steps[cursor];
     el.querySelector('.model-state').textContent=JSON.stringify(step.state,null,2);
+    renderInternals(el.querySelector('.internals-view'),id,step.state);
     const list=el.querySelector('.checks');list.replaceChildren();
     for(const check of step.checks){const li=document.createElement('li');li.className=check.pass===null?'pending':check.pass?'pass':'fail';li.textContent=`${check.pass===null?'Pending':check.pass?'PASS':'FAIL'} · ${check.name}`;list.append(li);}
     status.textContent=recovery?recovery.label:`Step ${cursor} of ${run.steps.length-1} · ${step.label}`;
@@ -44,6 +46,6 @@ for(const input of notes){
   input.addEventListener('input',()=>{try{localStorage.setItem(key,input.type==='checkbox'?String(input.checked):input.value);noteStatus.textContent='Draft saved on this device. Download to keep a separate copy.';}catch{storageAvailable=false;noteStatus.textContent='Browser storage is unavailable. Download your record before leaving.';}});
 }
 if(noteStatus&&!storageAvailable)noteStatus.textContent='Browser storage is unavailable. Download your record before leaving.';
-const notebook=()=>({schema:1,revision,chapter:page,created:new Date().toISOString(),notes:Object.fromEntries(notes.map(input=>[input.dataset.note,input.type==='checkbox'?input.checked:input.value])),sql:[...document.querySelectorAll('.sql-cell')].map(cell=>({source:cell.querySelector('textarea').value,output:cell.querySelector('.result').textContent,executedSource:cell.dataset.executed||null,execution:cell.dataset.execution||null,outcome:cell.dataset.outcome||null})),runs:[...records,...[...document.querySelectorAll('.experiment')].map(el=>el.evidence()).filter(Boolean)]});
+const notebook=()=>({schema:1,revision,chapter:page,created:new Date().toISOString(),notes:Object.fromEntries(notes.map(input=>[input.dataset.note,input.type==='checkbox'?input.checked:input.value])),implementations:[...document.querySelectorAll('.implementation-bench')].map(el=>el.evidence?.()).filter(Boolean),sql:[...document.querySelectorAll('.sql-cell')].map(cell=>({source:cell.querySelector('textarea').value,output:cell.querySelector('.result').textContent,executedSource:cell.dataset.executed||null,execution:cell.dataset.execution||null,outcome:cell.dataset.outcome||null})),runs:[...records,...[...document.querySelectorAll('.experiment')].map(el=>el.evidence()).filter(Boolean)]});
 document.querySelector('#download-notes')?.addEventListener('click',()=>{const book=notebook();save(`# Transaction design record: ${page}\n\n${Object.entries(book.notes).map(([key,value])=>`## ${key}\n\n${value}`).join('\n\n')}\n`,`${page}-design.md`,'text/markdown');});
 document.querySelector('#download-evidence')?.addEventListener('click',()=>save(notebook(),`${page}-notebook.json`));

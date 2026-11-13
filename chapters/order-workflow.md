@@ -28,6 +28,12 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>A successful payment followed by a failed local commit still needs reconciliation by order identity. Do not hold a database transaction open across a network payment merely to make the code look atomic.</p></details>
 <details><summary>Worked explanation</summary><p>The protected model conserves inventory, produces one charge and one dispatch effect in both supplied failure schedules. Those are bounded experiments, not a proof for every implementation. The model assumes an idempotent payment API, durable local records and an inbox; the final design must state these contracts and the failure cases beyond them.</p></details>
 
+## Under the hood: map each guarantee to executable machinery
+
+For every success label in the capstone, identify its implementation dependency: row visibility and update protection for reservation; a private write set plus WAL commit for order/outbox atomicity; a durable key/result protocol for payment retries; and inbox/effect publication for dispatch deduplication. The orchestration model assumes these local engines exist; it does not implement all of them together.
+
+Use your completed [visibility](./mvcc.html), [validation](./validation.html), [deadlock](./lock-manager.html) and [redo](./recovery-engine.html) implementations as supporting artifacts. Show a concrete internal counterexample if one mechanism is weakened. This connects application correctness to the state structures that enforce it, rather than treating database and broker guarantees as unexplained labels.
+
 ## Transfer the idea
 
 Design the missing path: payment succeeds, the reservation expires, and confirmation cannot commit. Specify reconciliation or refund, a stable refund key, pending states and operator intervention. Then propose tests for concurrent duplicate requests and crashes during compensation.

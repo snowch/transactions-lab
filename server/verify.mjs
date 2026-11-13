@@ -53,6 +53,17 @@ try{
     }
     x.close();y.close();
   }
+  await o.query('CREATE TABLE lab.versions(id integer PRIMARY KEY,value integer); INSERT INTO lab.versions VALUES (1,100);');
+  const pinned=new Session('tx-pinned-version');
+  const old=await pinned.query('BEGIN ISOLATION LEVEL REPEATABLE READ; SELECT value,xmin::text FROM lab.versions;');
+  const snapshot=await pinned.query('SELECT pg_current_snapshot()::text;');
+  await b.query('UPDATE lab.versions SET value=70 WHERE id=1;');
+  const current=await o.query('SELECT value,xmin::text FROM lab.versions;');
+  assert.equal(old.split('|')[0],'100');assert.equal(current.split('|')[0],'70');assert.notEqual(old.split('|')[1],current.split('|')[1]);
+  assert.equal(await pinned.query('SELECT value,xmin::text FROM lab.versions;'),old);
+  assert.equal(await pinned.query('SELECT pg_current_snapshot()::text;'),snapshot);
+  await pinned.query('COMMIT;');assert.equal(await pinned.query('SELECT value FROM lab.versions;'),'70');pinned.close();
+  console.log('PASS · tuple creator XIDs change while a pinned snapshot retains the old version');
   const d1=new Session('tx-deadlock-a'),d2=new Session('tx-deadlock-b');
   await d1.query("BEGIN; SET LOCAL deadlock_timeout='100ms'; UPDATE lab.inventory SET stock=stock WHERE sku='bike';");
   await d2.query("BEGIN; SET LOCAL deadlock_timeout='100ms'; UPDATE lab.inventory SET stock=stock WHERE sku='helmet';");

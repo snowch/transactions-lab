@@ -28,6 +28,14 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>The temporary file must be on the same file system for the intended atomic rename. Directory fsync support and guarantees depend on the platform and storage stack.</p></details>
 <details><summary>Worked explanation</summary><p>Atomic rename makes readers switch names as one visible operation. It does not by itself flush file data or persist the changed directory. Under this model the durable protocol recovers a complete old or new file at every prefix and new after acknowledgement. The unsafe ordering can persist a new name before its data. Use the downloadable native exercise to execute Linux file operations; killing a process alone does not simulate a power failure.</p></details>
 
+## Under the hood: data pages and directory entries are separate writes
+
+A file descriptor names an open file object. Writing it changes buffered contents that the kernel may persist later. Rename changes the directory namespace that future lookups follow; it is not equivalent to forcing the new file's contents or the directory's own modified metadata. The durable replacement protocol has dependencies between those operations.
+
+A journaling file system records recoverable metadata changes before installing them in their home locations. A copy-on-write design can instead prepare new blocks and publish a new root reference. Neither turns an arbitrary sequence of application-level multi-file operations into one transaction automatically. Reader visibility, namespace atomicity and post-crash durability remain distinct properties.
+
+Compare the file replacement steps with the [WAL page engine](./recovery-engine.html): both must preserve the information that makes every allowed crash prefix recoverable, while their log format and commit unit differ.
+
 ## Transfer the idea
 
 Replace two related files, data and index. Explain why two atomic renames are not one atomic multi-file transaction. Design a manifest or generation directory that readers follow through one published reference.

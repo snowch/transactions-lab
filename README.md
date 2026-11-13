@@ -1,25 +1,28 @@
 # Transactions Lab
 
-**Design. Break. Repair.** An 18-investigation, six-part course on transaction
-design across databases, durable files and distributed workflows.
+**Build. Trace. Explain.** A 24-investigation, six-part course on how transactions
+work inside databases, storage engines and distributed workflows. Six implementation
+benches execute learner-written algorithms in the browser.
 
 [Open the lab](https://snowch.github.io/transactions-lab/) ·
 [Curriculum](scripts/catalog.mjs) · [Runtime boundaries](chapters/runtime.md)
 
 ## The hands-on path
 
-1. State invariants, choose transaction boundaries and reserve the last item.
-2. Interleave requests, reproduce write skew, build deadlocks and retry decisions.
-3. Crash between file/log writes and again during recovery.
-4. Lose the two-phase coordinator and distinguish consensus from atomic commit.
+1. Build transaction descriptors, private write sets and atomic publication.
+2. Implement MVCC visibility, OCC validation and lock-manager cycle detection; derive anomalies and retries.
+3. Inspect buffer frames, LSNs, checkpoints, redo and undo; crash between writes.
+4. Trace prepared/decision records and a replicated log through elections and prefix repair.
 5. Repair dual writes, uncertain outcomes and failed compensation.
-6. Defend an order-service design using baseline/broken/repaired evidence.
+6. Defend an order-service implementation using internal traces, code and failure evidence.
 
 SQL pages run genuine PostgreSQL through self-hosted PGlite/WASM. Controlled
 JavaScript models expose state transitions and invariants; they explicitly say
 what they assume and do not claim live cluster or disk execution. Native Python
 and independent-session PostgreSQL extensions take selected cases to real systems.
-Every investigation includes predictions, editable experiments, hints, explanations,
+Mechanism source is extracted from the engine that runs each trace. Implementation
+benches accept JavaScript functions and report named edge cases; code and evidence
+are exportable. Every investigation includes predictions, editable experiments, hints, explanations,
 transfer tasks and a locally saved/exportable transaction design record.
 
 ## Develop and verify

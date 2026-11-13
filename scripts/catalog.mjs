@@ -1,29 +1,37 @@
 export const groups = [
-  {title:'I · Design the boundary', pages:[
-    ['invariants','01 · State the invariant','sql'],
-    ['atomicity','02 · Make a transfer atomic','sql'],
-    ['constraints','03 · Reserve the last item','sql']]},
-  {title:'II · Share the state', pages:[
-    ['lost-update','04 · Lose an update','model','lost-update'],
-    ['write-skew','05 · Break a rule with snapshots','model','write-skew'],
-    ['locks','06 · Build a deadlock','model','locks'],
-    ['retries','07 · Retry the whole decision','model','retries'],
-    ['contention','08 · Correct, but waiting','model','contention']]},
-  {title:'III · Survive a crash', pages:[
-    ['files','09 · Replace a file safely','model','files'],
-    ['wal','10 · Find the commit point','model','wal'],
-    ['recovery','11 · Crash during recovery','model','recovery']]},
-  {title:'IV · Agree to commit', pages:[
-    ['two-phase','12 · Lose the coordinator','model','two-phase'],
-    ['consensus','13 · Separate agreement from commit','model','consensus']]},
+  {title:'I · Build a transaction', pages:[
+    ['invariants','State the invariant','sql'],
+    ['transaction-manager','Build the transaction manager','model','transaction-manager'],
+    ['atomicity','Make a transfer atomic','sql'],
+    ['constraints','Reserve the last item','sql']]},
+  {title:'II · Implement isolation', pages:[
+    ['mvcc','Build MVCC visibility','model','mvcc'],
+    ['lost-update','Lose an update','model','lost-update'],
+    ['write-skew','Break a rule with snapshots','model','write-skew'],
+    ['validation','Validate a transaction','model','validation'],
+    ['lock-manager','Build the lock manager','model','lock-manager'],
+    ['locks','Build a deadlock','model','locks'],
+    ['retries','Retry the whole decision','model','retries'],
+    ['contention','Correct, but waiting','model','contention']]},
+  {title:'III · Implement durability', pages:[
+    ['files','Replace a file safely','model','files'],
+    ['wal','Find the commit point','model','wal'],
+    ['recovery-engine','Build log recovery','model','recovery-engine'],
+    ['recovery','Crash during recovery','model','recovery']]},
+  {title:'IV · Implement distributed decisions', pages:[
+    ['two-phase','Lose the coordinator','model','two-phase'],
+    ['consensus','Separate agreement from commit','model','consensus'],
+    ['replicated-log','Replicate the decision log','model','replicated-log']]},
   {title:'V · Cross application boundaries', pages:[
-    ['outbox','14 · Close the dual-write gap','hybrid','outbox'],
-    ['idempotency','15 · Did it commit?','model','idempotency'],
-    ['sagas','16 · Undo a workflow','model','sagas']]},
-  {title:'VI · Defend the design', pages:[
-    ['order-workflow','17 · Break the order service','model','order-workflow'],
-    ['design-review','18 · Defend your transaction','reading']]},
+    ['outbox','Close the dual-write gap','hybrid','outbox'],
+    ['idempotency','Did it commit?','model','idempotency'],
+    ['sagas','Undo a workflow','model','sagas']]},
+  {title:'VI · Defend the implementation', pages:[
+    ['order-workflow','Break the order service','model','order-workflow'],
+    ['design-review','Defend your transaction','reading']]},
 ];
+let number=0;
+for(const group of groups)for(const page of group.pages)page[1]=`${String(++number).padStart(2,'0')} · ${page[1]}`;
 export const labs = groups.flatMap(g=>g.pages.map(([slug,title,runtime,model])=>({slug,title,runtime,model,group:g.title,file:`chapters/${slug}.md`})));
 export const pages = [
   {slug:'index',title:'Transactions Lab',file:'chapters/index.md',runtime:'overview'},

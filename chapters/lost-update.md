@@ -2,7 +2,7 @@
 
 Two reservations succeed, but the stock falls only once. Force the schedule that a quick happy-path test would miss.
 
-**You will:** Trace a stale read, identify a lost update, and move a decision into an atomic conditional operation. **Prerequisites:** chapters 1–3. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** Trace a stale read, identify a lost update, and move a decision into an atomic conditional operation. **Prerequisites:** chapters 1–4. **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
 
 ## Predict before running
 
@@ -27,6 +27,14 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 1 · Follow the state</summary><p>Follow the value each client read. A later write does not automatically recompute that old value.</p></details>
 <details><summary>Hint 2 · Locate the boundary</summary><p>Compare a separately computed SET stock = 1 with SET stock = stock - 1 WHERE stock > 0. The latter makes the predicate and change one operation.</p></details>
 <details><summary>Worked explanation</summary><p>The bad interleaving ends with stock 1 and two reservations from an initial stock of 2. A serial schedule hides the bug. The conditional repair evaluates the current stock at its modeled atomic write, so with one item the second request is rejected. In a real database the statement, isolation level, error handling and transaction boundary determine the exact behavior.</p></details>
+
+## Under the hood: locking a write does not refresh an application value
+
+A read-modify-write request has two values: the database's current tuple and the value retained in client memory. Serializing the eventual writes cannot correct a stale literal computed earlier. Two statements equivalent to SET stock = 1 can each obtain valid write protection and still overwrite the same logical decrement.
+
+A conditional decrement combines reading the current protected row, deciding availability and installing its new version in the same database operation. An alternative is optimistic validation: store the version observed during the read, then refuse publication if it changed. That refusal is computed from a version comparison, not from a guess about how many requests overlapped.
+
+[Build the visibility predicate](./mvcc.html) and [the version validator](./validation.html). Compare their data structures: visibility chooses a readable historical version; validation decides whether a tentative transaction can safely publish.
 
 ## Transfer the idea
 

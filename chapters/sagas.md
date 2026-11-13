@@ -28,6 +28,12 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>Compensation can fail, require manual action, or be unable to reverse a real-world effect. Model those states rather than naming everything rollback.</p></details>
 <details><summary>Worked explanation</summary><p>A saga coordinates local commits and subsequent compensations. It does not generally isolate intermediate state or erase history. The repaired workflow remembers unfinished work until an idempotent compensation completes. Its design needs retry limits, alerting, ownership and reconciliation for prolonged failures.</p></details>
 
+## Under the hood: a persisted workflow state machine
+
+A workflow engine stores an operation ID, current step, completed local results, pending compensations and retry state. A worker must atomically claim or validate a workflow version before advancing it, otherwise two workers can both perform a step. The [OCC validator](./validation.html) illustrates this version check; an outbox or equivalent protocol ties durable next-step intent to local state.
+
+After a failure, restart reads the persisted state and retries the pending action using its original identity. Compensation is another forward operation with its own idempotence and recovery boundary. It does not rewind every system's history or provide serial isolation for intermediate states. Marking the workflow complete must reflect which required compensations really finished.
+
 ## Transfer the idea
 
 An email has already told the customer their order is confirmed. Payment later fails. Define the compensating communication and explain which original effects cannot be undone. Specify the customer-visible status during recovery.

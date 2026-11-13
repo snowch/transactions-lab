@@ -135,6 +135,44 @@ PostgreSQL aborts one transaction with SQLSTATE 40P01. Roll it back and commit
 the other. Do not grade which participant is the victim. Repair both paths to
 acquire bike, then helmet. B may wait for A, but the cycle is absent in this schedule.
 
+## 4. Inspect tuple versions and the snapshot boundary
+
+Observer, once:
+
+```sql
+CREATE TABLE lab.versions(id integer PRIMARY KEY,value integer);
+INSERT INTO lab.versions VALUES (1,100);
+```
+
+A:
+
+```sql
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+SELECT pg_current_snapshot()::text, id,value,xmin::text,xmax::text
+FROM lab.versions;
+```
+
+B:
+
+```sql
+UPDATE lab.versions SET value=70 WHERE id=1;
+SELECT id,value,xmin::text,xmax::text FROM lab.versions;
+```
+
+A: repeat its SELECT. It still reads value 100 using its pinned snapshot, while
+B sees 70 with a different creator xmin. A's visible old tuple may carry a
+superseding xmax without becoming invisible to this older snapshot. Finish A
+with COMMIT; a new statement can now see 70. Do not grade exact XID values.
+`pg_current_snapshot()` formats xmin:xmax:active-IDs; the tuple's xmax has a
+different meaning and in PostgreSQL can also encode locks/MultiXacts. The browser
+MVCC engine omits those extra physical details. SQL SELECT enumerates logical
+visible rows, not all heap versions.
+
+Compare the three actual observations with the MVCC lab's creator/deleter
+predicate and status table. Explain the version-retention obligation while A
+remains open. The automated harness verifies the value and creator change plus
+snapshot stability on this real server.
+
 ## Verify and stop
 
 `npm run test:server` runs these schedules automatically in a separately named

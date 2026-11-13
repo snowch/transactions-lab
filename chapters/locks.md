@@ -28,6 +28,12 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>A timeout limits waiting. It does not establish why the wait occurred or prove that a whole workflow has been rolled back.</p></details>
 <details><summary>Worked explanation</summary><p>Opposite acquisition order produces A waiting for B and B waiting for A. Consistent order prevents this cycle in the two-resource model. A real PostgreSQL server detects deadlocks and aborts a transaction; applications must handle that error. The model does not pick a victim or measure detector delay.</p></details>
 
+## Under the hood: from ownership to a wait edge
+
+The lock manager looks up a resource, checks compatibility against other owners, and either grants a request or queues it. Blocking is represented by dependencies on conflicting owners and, depending on queue policy, earlier incompatible requests. A deadlock detector traverses that graph and selects an abort victim from a cycle; abort must release ownership and allow eligible queued requests to wake.
+
+The [lock-manager implementation](./lock-manager.html) exposes S/X compatibility, shared-to-exclusive upgrades, FIFO queues and DFS cycle detection. These S/X modes are teaching primitives. PostgreSQL has several table and tuple lock modes; a relation lock called RowExclusiveLock is compatible with another ordinary row-updating transaction's relation lock. Its name does not mean one writer owns every row exclusively. Use the actual blocker observations in the server worksheet rather than reading the mode name as a full explanation.
+
 ## Transfer the idea
 
 Add a third resource, a coupon. Give checkout and cancellation one common resource order. Explain whether row IDs, table order, advisory locks or a single owner record make that order enforceable in your design. Reproduce the two-resource cycle on the real server.

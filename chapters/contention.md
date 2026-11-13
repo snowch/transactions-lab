@@ -28,6 +28,12 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>A lock per account does not protect a bank-wide limit unless all relevant changes also coordinate over that limit.</p></details>
 <details><summary>Worked explanation</summary><p>The global design preserves counting but finishes the default workload in 24 ticks. Four independent slots finish it in 6 ticks. This is a model of available parallelism, not evidence of a fourfold production speedup. Real waiting also depends on skew, lock duration, I/O, retries, fairness and scheduling.</p></details>
 
+## Under the hood: lock hold time becomes a queue
+
+The lock table turns incompatible requests into waiting work. A transaction that retains ownership across a network wait occupies a scarce resource even if its CPU usage is zero. Queue length and waiting latency can grow while every committed result remains correct. A finer lock key reduces interference only when it still covers the complete invariant.
+
+In the [lock-manager engine](./lock-manager.html), follow the queue head and the release/wakeup path. A real throughput experiment must separately account for lock hold time, scheduler and I/O delay, validation aborts and retry work. MVCC can let readers proceed on old versions, but it does not eliminate every writer conflict or long-snapshot retention cost.
+
 ## Transfer the idea
 
 Design a workload where every request targets the same product. Explain how you would measure lock wait, useful completions, abort rate and p95 latency. Decide whether shorter transactions, admission control or a different invariant representation can help.

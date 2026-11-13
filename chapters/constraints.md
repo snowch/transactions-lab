@@ -63,6 +63,14 @@ Reset. Remove `AND stock > 0` in both cells and repeat. The second debit should 
 <details><summary>Hint 2 · Think about retries</summary><p>A stable request ID prevents a duplicate reservation row, but an application must return the original result on retry. It must not decrement stock and then silently ignore a duplicate INSERT.</p></details>
 <details><summary>Worked explanation</summary><p>The data-modifying CTE passes a product to INSERT only when a decrement succeeds. Both effects share the transaction. Exactly one of the sequential requests obtains the bicycle. Under PostgreSQL Read Committed, a competing updater waits and reevaluates the predicate against the updated row; other isolation levels can require a transaction retry. A cross-row invariant needs more than this row-local predicate.</p></details>
 
+## Under the hood: one predicate, one protected update
+
+The UPDATE does not grant a reservation just because an application previously read stock = 1. It locates a candidate tuple, obtains the needed row protection and applies the availability predicate as part of the write operation. At PostgreSQL Read Committed, an updater that waited for another updater can recheck its predicate against that transaction's updated row version. A snapshot/serializable execution can instead need a retry.
+
+The RETURNING row connects the successful decrement to the reservation INSERT inside the same transaction. The reservation's unique index enforces request identity; the foreign-key path enforces a referenced product. A retry that decrements stock and then ignores a duplicate reservation INSERT would violate the intended accounting even though uniqueness itself held.
+
+[Inspect version visibility](./mvcc.html), [implement lock compatibility](./lock-manager.html), then explain how these mechanisms support the statement-level behavior observed here.
+
 ## Transfer the idea
 
 Reserve a bicycle and helmet as one bundle. Describe how you will undo a partial reservation if the helmet is unavailable. Then specify a consistent lock order and a stable request identity. [Run the real-server extension](./native.html).

@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {pages,labs} from '../../scripts/catalog.mjs';
 import {definitions} from '../../web/models.js';
+import {benches,referenceSource} from '../../web/benchmarks.js';
 
 test('the complete course works under the Pages subpath without broken resources',async({page})=>{
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
@@ -107,7 +108,7 @@ test('keyboard navigation and narrow layout retain access to chapters and experi
   await page.keyboard.press('Enter');
   const menu=page.getByRole('button',{name:'Chapters',exact:true});await menu.click();
   await expect(menu).toHaveAttribute('aria-expanded','true');
-  await expect(page.getByRole('link',{name:'15 · Did it commit?',exact:true})).toBeVisible();
+  await expect(page.getByRole('link',{name:labs.find(l=>l.slug==='idempotency').title,exact:true})).toBeVisible();
   await page.keyboard.press('Escape');await expect(menu).toBeFocused();await expect(menu).toHaveAttribute('aria-expanded','false');
   await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
   await page.getByRole('button',{name:'Run to end',exact:true}).click();
@@ -130,4 +131,46 @@ test('desktop and mobile reading surfaces and SQL fit the viewport',async({page}
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:'test-results/sql-mobile.png',fullPage:true});
+});
+
+test('all implementation benches execute learner code, report edge cases and accept a correct algorithm',async({page})=>{
+  for(const [id,bench] of Object.entries(benches)){
+    await page.goto(`${id}.html`);
+    await page.getByRole('button',{name:'Test implementation',exact:true}).click();
+    await expect(page.locator('.implementation-status')).toContainText('inspect the failing inputs');
+    await expect(page.locator('.implementation-results .fail')).not.toHaveCount(0);
+    await page.getByRole('textbox',{name:'Your JavaScript implementation',exact:true}).fill(referenceSource(id));
+    await expect(page.locator('.implementation-results>li')).toHaveCount(0);
+    await page.getByRole('button',{name:'Test implementation',exact:true}).click();
+    await expect(page.locator('.implementation-status')).toContainText(`${bench.cases.length} / ${bench.cases.length} cases passed`);
+    await expect(page.locator('.implementation-results .fail')).toHaveCount(0);
+    await page.getByRole('button',{name:'Run to end',exact:true}).click();
+    await expect(page.locator('.internals-view table')).not.toHaveCount(0);
+  }
+});
+
+test('implementation code persists, nonterminating code is bounded and notebook records tested source',async({page})=>{
+  await page.goto('mvcc.html');
+  const code=page.getByRole('textbox',{name:'Your JavaScript implementation',exact:true});
+  await code.fill(referenceSource('mvcc'));await page.reload();await expect(code).toHaveValue(referenceSource('mvcc'));
+  await page.getByRole('button',{name:'Test implementation',exact:true}).click();await expect(page.locator('.implementation-status')).toContainText('10 / 10 cases passed');
+  const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download notebook + evidence'}).click();
+  const stream=await(await pending).createReadStream();let data='';for await(const chunk of stream)data+=chunk;
+  const book=JSON.parse(data);expect(book.implementations[0].testedSource).toBe(referenceSource('mvcc'));expect(book.implementations[0].results.every(r=>r.pass)).toBe(true);
+  await code.fill('function solve() { while (true) {} }');await page.getByRole('button',{name:'Test implementation',exact:true}).click();
+  await expect(page.locator('.implementation-status')).toContainText('Stopped after 2 seconds',{timeout:10000});
+  await code.fill('function solve(');await page.getByRole('button',{name:'Test implementation',exact:true}).click();await expect(page.locator('.implementation-status')).toContainText('Cannot test');
+  await page.getByRole('button',{name:'Restore starter',exact:true}).click();await expect(code).toHaveValue(benches.mvcc.starter);
+});
+
+test('internal tables, source and implementation editor remain usable at desktop and mobile widths',async({page})=>{
+  await page.setViewportSize({width:1440,height:1000});await page.goto('recovery-engine.html');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();await page.getByRole('button',{name:'Crash & recover here',exact:true}).click();
+  await expect(page.locator('.checks .fail')).toHaveCount(0);await page.evaluate(()=>scrollTo(0,0));
+  await page.screenshot({path:'test-results/recovery-engine-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});await page.goto('mvcc.html');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await page.locator('.engine-source summary').click();await expect(page.locator('.engine-source pre')).toContainText('function visible');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.evaluate(()=>scrollTo(0,0));
+  await page.screenshot({path:'test-results/mvcc-mobile.png',fullPage:true});
 });

@@ -51,3 +51,33 @@ including deliberately false baseline results. Browser checks exercise all pages
 editable models, downloads, real SQL errors/reset, keyboard navigation, local
 persistence, subpath resources and mobile layout. Server checks synchronize actual
 independent sessions by observing lock waits before advancing the owner.
+
+## Mechanism-first revision
+
+The course now has 24 investigations, including six dedicated implementation labs.
+The transaction manager, MVCC visibility and version retention, lock compatibility
+and queues, OCC version validation, steal/no-force log recovery and replicated
+log core are implemented in `web/mechanisms.js`. Tables expose their state before
+the raw JSON snapshot. Source panels are extracted from the actual functions at
+build time, and full modules are downloadable.
+
+The write-skew model now computes read/write dependency edges and runs a graph
+cycle check instead of treating the second commit as a predetermined abort. The
+2PC trace exposes individual stable PREPARED/COMMIT records, message ordering,
+resource retention and coordinator decision reconstruction. Their code is shown
+alongside the conceptual distinctions from PostgreSQL SSI and full consensus.
+
+`web/benchmarks.js` defines six finite implementation contracts and independently
+specified input/output cases. Learners write functions in a separate worker;
+results include failing inputs, expected/actual values and mutation detection.
+Worker termination bounds nonterminating attempts. Code drafts save locally and
+exports distinguish current source from tested source. The trace continues to
+run reference code; benchmarks do not secretly modify the model. Downloaded code
+can be tested locally through `web/verify-implementation.mjs` and then integrated
+into an edited engine for further experiments.
+
+All original chapters now explain their internal enforcement path. Real SQL
+inspects tuple creator markers through update/rollback, while the independent
+server extension verifies snapshot stability and changed tuple creator IDs.
+The capstone requires algorithm implementations and internal traces, as well as
+application invariants and failure policies.

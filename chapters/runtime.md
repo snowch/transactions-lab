@@ -18,6 +18,14 @@ Step reveals a transition, Run to end exposes the whole schedule, and clicking a
 
 A green check means the named predicate holds at that state. It does not prove correctness over all inputs. Pending means that a postcondition is not yet due or recovery has not been evaluated. A failed deadlock check concerns liveness, whereas a failed inventory check concerns safety.
 
+## Executable internals and implementation benches
+
+Six mechanism engines expose transaction publication, tuple-version visibility, lock tables/queues, optimistic version validation, buffer/log recovery and a replicated log core. State tables and raw snapshots come from the same executable functions. Source disclosures are generated directly from those functions; complete modules are downloadable. The snapshot write-skew model now derives read/write edges and runs an actual cycle check; it does not implement PostgreSQL's SSI dangerous-structure detection.
+
+Implementation benches run your JavaScript function in a separate Worker against named input/output cases. You can inspect every failing input and compare a reference after trying. Stop terminates the worker; a two-second limit bounds a nonterminating attempt. Code edits invalidate prior results and save locally when storage permits. The step-through engine continues to use its published reference algorithm; the separate bench does not silently replace it. Download your implementation to change and test the full engine locally.
+
+Notebook exports include current implementation source, the tested source, named-case results, status and build revision. Passing these finite cases is evidence, not a formal proof. The log recovery core has one writer and no ARIES CLRs; the Raft-style core has explicit synchronous send events and omits timers, membership changes and arbitrary concurrent-leader schedules. Each lab lists further limits beside its controls.
+
 ## Native and shared-server extensions
 
 The downloadable Python exercises execute real file operations in a temporary directory. Fault injection exits a process at named protocol points. It tests program restart and recovery, not abrupt power loss, hardware caches, every file system or every torn-write pattern.

@@ -1,3 +1,4 @@
+import {mechanismDefinitions,mechanismRunners,recoverEngine} from './mechanisms.js';
 // Explicit, deterministic teaching models. These are not database/storage implementations.
 const clone = value => structuredClone(value);
 const flag = (name, pass) => ({name, pass});
@@ -13,8 +14,9 @@ function trace(state, checks) {
   return {steps,add,finish:()=>({steps})};
 }
 export const definitions = {
+  ...mechanismDefinitions,
   'lost-update': {presets:{broken:{strategy:'read-write',stock:2,schedule:['A.read','B.read','A.write','B.write']},repaired:{strategy:'conditional',stock:1,schedule:['A.read','B.read','A.write','B.write']}},boundary:'A deterministic interleaving of two clients. Conditional updates represent an atomic database operation; no SQL server or real threads run here.'},
-  'write-skew': {presets:{broken:{isolation:'snapshot',schedule:['A.read','B.read','A.write','B.write']},repaired:{isolation:'serializable',schedule:['A.read','B.read','A.write','B.write']}},boundary:'A two-row dependency model. Serializable rejects this known unsafe schedule; this is not an implementation of PostgreSQL SSI.'},
+  'write-skew': {presets:{broken:{isolation:'snapshot',schedule:['A.read','B.read','A.write','B.write']},repaired:{isolation:'serializable',schedule:['A.read','B.read','A.write','B.write']}},boundary:'A two-row snapshot and read/write dependency engine. The serializable policy runs a DFS cycle check before publication; PostgreSQL SSI uses a different dangerous-structure algorithm.'},
   locks:{presets:{broken:{ordering:'opposite'},repaired:{ordering:'consistent'}},boundary:'A lock ownership and wait-for model. Victim selection and detector timing are not modeled.'},
   retries:{presets:{broken:{retry:'statement'},repaired:{retry:'transaction'}},boundary:'A version-validation model with one forced conflicting commit. It models a retry boundary, not a database isolation algorithm.'},
   contention:{presets:{broken:{lock:'global',requests:8,keys:4,service:3},repaired:{lock:'per-key',requests:8,keys:4,service:3}},boundary:'Synthetic logical ticks with equal service times and one request per key per batch. These are model results, not measured throughput. Per-key locking is valid only for independent invariants.'},
@@ -32,6 +34,7 @@ export const definitions = {
 export function runModel(id, input) {
   if(!definitions[id])throw Error('Unknown model');
   const c=clone(input);
+  if(mechanismRunners[id])return mechanismRunners[id](c);
   if(id==='lost-update') {
     choice(c,'strategy',['read-write','conditional']);integer(c,'stock',1);
     schedule(c,['A.read','B.read','A.write','B.write']);
@@ -43,18 +46,6 @@ export function runModel(id, input) {
         const available=c.strategy==='conditional'?s.stock:s.reads[who];
         if(available<1){s.rejected.push(who);t.add(`${who} rejects: no stock`);}
         else {s.stock=available-1;s.reservations++;s.written.push(who);t.add(`${who} commits reservation`);}}
-    }return t.finish();
-  }
-  if(id==='write-skew') {
-    choice(c,'isolation',['snapshot','serializable']);schedule(c,['A.read','B.read','A.write','B.write']);
-    const s={onCall:{A:true,B:true},reads:{},commits:[],aborts:[]};
-    const t=trace(s,s=>[flag('at least one doctor remains on call',s.onCall.A||s.onCall.B)]);
-    for(const op of c.schedule){const [who,action]=op.split('.');
-      if(action==='read'){if(who in s.reads)throw Error('Each client reads once.');s.reads[who]=Number(s.onCall.A)+Number(s.onCall.B);t.add(`${who} sees ${s.reads[who]} available doctors`);}
-      else {if(!(who in s.reads)||s.commits.includes(who)||s.aborts.includes(who))throw Error('Read once before writing once.');
-        if(c.isolation==='serializable'&&s.commits.length&&s.reads[who]>1&&Number(s.onCall.A)+Number(s.onCall.B)<2){s.aborts.push(who);t.add(`${who} aborts: unsafe read/write dependency`);}
-        else if(s.reads[who]>1){s.onCall[who]=false;s.commits.push(who);t.add(`${who} commits leaving the roster`);}
-        else {s.commits.push(who);t.add(`${who} stays: already the last doctor`);}}
     }return t.finish();
   }
   if(id==='locks') {
@@ -109,19 +100,6 @@ export function runModel(id, input) {
     const s={balance:c.initial,initial:c.initial,amount:c.amount,target:c.initial+c.amount,logPresent:true,replays:0,representation:c.representation};
     const t=trace(s,s=>[flag('after replay, the effect occurs once',s.replays?s.balance===s.target:null)]);
     s.balance=c.representation==='increment'?s.balance+c.amount:s.target;s.replays++;t.add('Replay the committed record once');t.add('Crash before the log can be cleared');return t.finish();
-  }
-  if(id==='two-phase') {
-    choice(c,'resolution',['timeout-abort','wait','recover']);
-    const s={A:'active',B:'active',durableDecision:null,coordinator:'reachable',progress:'running'};
-    const t=trace(s,s=>[flag('participants never decide commit and abort',!([s.A,s.B].includes('committed')&&[s.A,s.B].includes('aborted')))]);
-    s.A='prepared';s.B='prepared';t.add('Both participants durably prepare and vote YES');
-    s.durableDecision='commit';t.add('Coordinator durably records COMMIT');
-    s.A='committed';t.add('A receives COMMIT and releases resources');
-    s.coordinator='unreachable';s.progress='blocked';t.add('Coordinator becomes unreachable before notifying B');
-    if(c.resolution==='timeout-abort'){s.B='aborted';s.progress='unsafe completion';t.add('B guesses ABORT from its timeout');}
-    else if(c.resolution==='recover'){s.coordinator='recovered';s.B='committed';s.progress='complete';t.add('Recover the durable decision and notify B');}
-    else t.add('B retains prepared state and waits for a known decision');
-    return t.finish();
   }
   if(id==='consensus') {
     integer(c,'replicas',3,9);integer(c,'reachable',0,c.replicas);choice(c,'decision',['unknown','commit','abort']);
@@ -185,6 +163,7 @@ export function runModel(id, input) {
 }
 
 export function recoverModel(id, state) {
+  if(id==='recovery-engine')return recoverEngine(state);
   const s=clone(state);
   if(id==='files') {
     const recovered=s.durableName==='old'?'old':s.durableTemp==='new'?'new':'incomplete';
@@ -201,4 +180,4 @@ export function recoverModel(id, state) {
   }
   throw Error('This lab has no crash/recovery transition.');
 }
-export const crashModels = new Set(['files','wal','recovery']);
+export const crashModels = new Set(['files','wal','recovery','recovery-engine']);

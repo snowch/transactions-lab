@@ -2,6 +2,24 @@
 
 Use the browser to control the failure story, then test the corresponding behavior against real file operations or independent PostgreSQL sessions.
 
+## Run and change the mechanism engines
+
+The source displayed in the implementation labs is executable JavaScript, not a separate illustrative listing. From the repository, invoke the pure engine directly:
+
+```sh
+node --input-type=module -e "import {mvcc, mechanismDefinitions} from './web/mechanisms.js'; console.log(JSON.stringify(mvcc(mechanismDefinitions.mvcc.presets.repaired), null, 2));"
+```
+
+Download your function from an implementation bench and run its named cases locally:
+
+```sh
+node web/verify-implementation.mjs mvcc ./mvcc-implementation.mjs
+```
+
+Downloads for a standalone folder: [mechanisms.js](./downloads/mechanisms.js), [benchmarks.js](./downloads/benchmarks.js), and [verify-implementation.mjs](./downloads/verify-implementation.mjs). Keep all three together; then run `node verify-implementation.mjs mvcc ./mvcc-implementation.mjs`. Implementations are self-contained exported functions; imports/closures inside a submitted function are outside this bench contract. The local checker runs your code directly, so use the browser worker if you want its bounded execution controls.
+
+Change the engine itself for a larger project: add a second MVCC snapshot, a new lock mode, predicate validation or a compensation log record. State the new transition and failure rules, then add tests that independently check the resulting history. Inspect the original test suites as examples of boundary and invariant checks, rather than copying their expected outcomes blindly.
+
 ## Shared PostgreSQL
 
 You need Docker with Compose, Node.js 24 and this repository. The server uses PostgreSQL 17 with no published ports. Its password is for this isolated disposable lab only. Use a unique Compose project if you run multiple checkouts.

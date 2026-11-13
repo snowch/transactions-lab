@@ -28,6 +28,14 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>An increment can also be replay-safe if an implementation tracks applied log positions atomically. Representation and deduplication are alternative tools, with different requirements.</p></details>
 <details><summary>Worked explanation</summary><p>The baseline reaches 120 once, then 140 on repeated replay. An after-image of 120 remains 120. Actual databases often use page log sequence numbers and recovery rules rather than relying only on whole-page overwrites. The core requirement is repeatable recovery under the system’s failure model. Recovery itself is a failure-prone workload.</p></details>
 
+## Under the hood: replay progress is data too
+
+A redo record has an ordered identity such as an LSN. A pageLSN records the newest change already installed on that page, letting recovery skip a record at or below that position. That prevents applying the same physical effect repeatedly even when startup scans its record again.
+
+Undo is a different problem: it reverses unfinished work. ARIES uses compensation log records (CLRs) to record completed undo steps and an undoNextLSN to resume progress after another crash. CLRs are redoable descriptions of undo progress, not ordinary updates to undo recursively. This chapter's repeated-after-image example and the [one-writer log engine](./recovery-engine.html) introduce the requirement without claiming to implement full ARIES.
+
+Do not discard a log prefix simply because a checkpoint exists: dirty-page redo and unfinished-transaction undo can depend on earlier records. Describe both retention dependencies in the design record.
+
 ## Transfer the idea
 
 A ledger contains two legitimate deposits of the same amount. Explain why deduplicating by amount is incorrect. Choose a transaction or log-record identity and specify how the applied marker becomes atomic with the balance change.

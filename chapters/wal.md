@@ -28,6 +28,14 @@ Download a run before changing settings. The export includes the submitted confi
 <details><summary>Hint 2 · Locate the boundary</summary><p>The marker is useful only if recovery can trust that the records it commits are complete and durable first.</p></details>
 <details><summary>Worked explanation</summary><p>The repair changes the crash outcome at the durable commit marker. Before that point disk remains at the old transfer; afterward replay yields 70 and 130. This is a redo-only teaching protocol, not ARIES. It assumes atomic page writes and marker recognition. Real systems need torn-write handling, log validation, transaction identifiers and ordering guarantees.</p></details>
 
+## Under the hood: buffers, ordering and group commit
+
+A log append first changes a memory buffer. A durable flush advances a monotonic log position. The write-ahead rule requires the log to cover a dirty page's changes before that page can reach durable storage. A commit record identifies which complete operation recovery must preserve; it is not a requirement to write every modified data page immediately.
+
+With group commit, several transactions can append separate commit records and wait for one flush through the highest needed LSN. Each transaction retains its own commit decision and may be acknowledged only once its required record is durable. Sharing a flush batches the persistence cost; it does not merge application transactions into one atomic unit. Asynchronous acknowledgement changes the durability contract and must be stated explicitly.
+
+The next [recovery-engine lab](./recovery-engine.html) replaces abstract log booleans with actual BEGIN/UPDATE/COMMIT records, before/after images, pageLSNs and a checkpoint. Inspect its arrays and redo decisions to explain exactly how the smaller protocol here is generalized.
+
 ## Transfer the idea
 
 Design a batch containing two transfers. Decide whether the commit unit is each transfer or the whole batch. Draw the log records and commit markers and describe recovery after every marker. Identify how group commit could share flush cost without sharing application atomicity.
