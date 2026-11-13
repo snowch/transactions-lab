@@ -174,3 +174,23 @@ test('internal tables, source and implementation editor remain usable at desktop
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:'test-results/mvcc-mobile.png',fullPage:true});
 });
+
+test('optional ARIES lab exposes both CLR pointers and survives multiple interrupted undo passes',async({page})=>{
+  await page.goto('aries.html');
+  await expect(page.locator('main')).toContainText('Optional advanced lab A1');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.checks .fail')).not.toHaveCount(0);
+  await expect(page.locator('.internals-view')).toContainText('undoNextLSN');
+  await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repeated-crashes');
+  await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await expect(page.locator('.checks .fail')).toHaveCount(0);
+  await expect(page.locator('.model-state')).toContainText('"complete": true');
+  await page.getByRole('button',{name:'Crash & recover here',exact:true}).click();
+  await expect(page.locator('.checks .fail')).toHaveCount(0);
+  await expect(page.locator('.model-state')).toContainText('"undoNextLSN"');
+  await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>scrollTo(0,0));
+  await page.screenshot({path:'test-results/aries-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'test-results/aries-mobile.png',fullPage:true});
+});

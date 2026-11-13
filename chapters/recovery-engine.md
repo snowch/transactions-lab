@@ -57,6 +57,10 @@ Remove checkpoint from the repaired schedule. Compare the dirty-page table and r
 <details><summary>Hint 2 · A checkpoint is not a commit or automatic log truncation</summary><p>An active transaction can have records before the checkpoint that undo still needs. A dirty page can have an older recLSN that redo still needs. The checkpoint records those dependencies rather than erasing them.</p></details>
 <details><summary>Worked explanation</summary><p>Enforcing WAL makes an uncommitted page flush recoverable because its before-image survives first. No-force commit is recoverable because after-images and COMMIT survive even when a data page does not. The pageLSN guard skips durable work already installed. A checkpoint can shorten reconstruction without making all earlier log records disposable. The transfer verifier is independent of the engine's completion status.</p></details>
 
+## Optional advanced continuation
+
+[A1 · ARIES recovery](./aries.html) implements redo-only compensation log records and undoNextLSN chains across repeated crashes, with multiple interleaved transactions. Take it after this foundation when you want to extend the recovery machinery.
+
 ## Transfer the idea
 
 Extend the log format with a CLR containing undoNextLSN. Draw a crash after undoing Alice but before finishing recovery. Identify which record prevents the next restart from undoing the same action incorrectly. Also specify the conditions under which a log prefix can be truncated safely.

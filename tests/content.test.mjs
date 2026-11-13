@@ -2,11 +2,11 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,access} from 'node:fs/promises';
 import {resolve,dirname} from 'node:path';
-import {labs,pages} from '../scripts/catalog.mjs';
+import {labs,pages,coreLabs,advancedLabs} from '../scripts/catalog.mjs';
 import {definitions} from '../web/models.js';
 import {benches} from '../web/benchmarks.js';
 test('all investigations offer experiment, feedback, transfer and design record',async()=>{
-  assert.equal(labs.length,24);
+  assert.equal(coreLabs.length,24);assert.equal(advancedLabs.length,1);assert.equal(advancedLabs[0].slug,'aries');assert.equal(advancedLabs[0].optional,true);
   for(const lab of labs){
     const source=await readFile(lab.file,'utf8'),html=await readFile(`dist/${lab.slug}.html`,'utf8');
     assert.match(source,/Transfer the idea/);assert.match(source,/<details>/);assert.match(html,/data-note="invariant"/);

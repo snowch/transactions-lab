@@ -379,3 +379,138 @@ mechanismRunners['write-skew']=snapshotDependencies;
 mechanismRunners['two-phase']=twoPhaseCommit;
 mechanismSources['write-skew']=[hasCycle,snapshotDependencies];
 mechanismSources['two-phase']=[twoPhaseCommit];
+
+// Optional advanced ARIES core. Transactions modify disjoint fixed pages; no media faults.
+export function ariesUndoNext(record) {
+  return record.type==='CLR' ? record.undoNextLSN : record.prevLSN;
+}
+export function ariesExpected(s) {
+  const durable=s.log.filter(r=>r.lsn<=s.flushedLSN);
+  const winners=new Set(durable.filter(r=>r.type==='COMMIT').map(r=>r.tx));
+  const expected={A:100,B:100,C:100};
+  for(const r of durable)if(r.type==='UPDATE'&&winners.has(r.tx))expected[r.page]+=r.delta;
+  return expected;
+}
+export function ariesChecks(s) {
+  const durable=s.log.filter(r=>r.lsn<=s.flushedLSN),counts={};
+  for(const r of durable)if(r.type==='CLR')counts[r.compensates]=(counts[r.compensates]||0)+1;
+  const winners=new Set(durable.filter(r=>r.type==='COMMIT').map(r=>r.tx));
+  return [
+    check('completed recovery preserves committed updates and removes loser updates',s.complete?Object.entries(ariesExpected(s)).every(([p,v])=>s.disk[p].value===v):null),
+    check('no original UPDATE has more than one durable compensation record',Object.values(counts).every(n=>n===1)),
+    check('every persisted page is covered by the durable log',Object.values(s.disk).every(p=>p.pageLSN<=s.flushedLSN)),
+    check('completed loser rollback has exactly one durable CLR per original UPDATE',s.complete?durable.filter(r=>r.type==='UPDATE').every(r=>winners.has(r.tx)?!counts[r.lsn]:counts[r.lsn]===1):null),
+  ];
+}
+export function ariesAppend(s,record) {
+  const lsn=(s.log.at(-1)?.lsn||0)+1;
+  const r={lsn,...(record.tx?{prevLSN:s.transactionTable[record.tx]?.lastLSN||0}:{}),...copy(record)};
+  s.log.push(r);
+  if(r.tx){const status=r.type==='COMMIT'?'committing':['ABORT','CLR'].includes(r.type)?'aborting':s.transactionTable[r.tx]?.status||'running';s.transactionTable[r.tx]={status,lastLSN:lsn};}
+  return r;
+}
+export function ariesApply(s,record) {
+  const frame=s.buffer[record.page];
+  if(frame.pageLSN>=record.lsn)return false;
+  frame.value+=record.delta;frame.pageLSN=record.lsn;
+  return true;
+}
+export function ariesFlush(s,page) {
+  if(s.buffer[page].pageLSN>s.flushedLSN)throw Error('WAL violation: flush the page’s log dependency first.');
+  s.disk[page]=copy(s.buffer[page]);
+}
+export function ariesPass(s,emit=()=>{},failure='none') {
+  s.pass++;s.phase='analysis';s.complete=false;
+  const discarded=s.log.filter(r=>r.lsn>s.flushedLSN).map(r=>r.lsn);
+  s.log=s.log.filter(r=>r.lsn<=s.flushedLSN);s.buffer=copy(s.disk);
+  s.transactionTable={};s.dirtyPageTable={};s.toUndo={};
+  const cp=s.log.find(r=>r.lsn===s.masterCheckpointLSN&&r.type==='CHECKPOINT');
+  if(cp){s.transactionTable=copy(cp.transactions);s.dirtyPageTable=copy(cp.dirtyPages);}
+  const scanned=s.log.filter(r=>r.lsn>(cp?.lsn||0));
+  for(const r of scanned) {
+    if(r.type==='END'){delete s.transactionTable[r.tx];continue;}
+    if(r.tx){const status=r.type==='COMMIT'?'committing':['ABORT','CLR'].includes(r.type)?'aborting':s.transactionTable[r.tx]?.status||'running';s.transactionTable[r.tx]={status,lastLSN:r.lsn};}
+    if(['UPDATE','CLR'].includes(r.type))s.dirtyPageTable[r.page]??=r.lsn;
+  }
+  s.analysis={checkpointLSN:cp?.lsn||0,scannedLSNs:scanned.map(r=>r.lsn),discardedLogLSNs:discarded};
+  emit(`Restart ${s.pass}: rebuild transaction/dirty-page tables from durable records`);
+  for(const [tx,entry] of Object.entries(s.transactionTable)) {
+    if(entry.status==='committing'){
+      ariesAppend(s,{type:'END',tx});s.flushedLSN=s.log.at(-1).lsn;delete s.transactionTable[tx];emit(`Analysis finishes durable winner ${tx} with END`);
+    }else if(entry.status==='running'){
+      ariesAppend(s,{type:'ABORT',tx});s.flushedLSN=s.log.at(-1).lsn;emit(`Analysis records ${tx} as aborting`);
+    }
+  }
+  s.phase='redo';s.redoStartLSN=Object.values(s.dirtyPageTable).length?Math.min(...Object.values(s.dirtyPageTable)):null;
+  emit('Redo repeats history, including loser UPDATEs and existing CLRs');
+  for(const r of s.log.filter(r=>r.lsn<=s.flushedLSN))if(['UPDATE','CLR'].includes(r.type)) {
+    const eligible=s.dirtyPageTable[r.page]!==undefined&&r.lsn>=s.dirtyPageTable[r.page];
+    const applied=eligible&&ariesApply(s,r);
+    s.redoDecisions.push({pass:s.pass,lsn:r.lsn,type:r.type,tx:r.tx,page:r.page,applied});
+    emit(`Redo ${r.type} ${r.lsn} on ${r.page}: ${applied?'apply':'skip by DPT/pageLSN'}`);
+  }
+  s.phase='undo';
+  s.toUndo=Object.fromEntries(Object.entries(s.transactionTable).filter(([,t])=>t.status==='aborting').map(([tx,t])=>[tx,t.lastLSN]));
+  emit('Undo starts from each loser’s lastLSN; choose the highest remaining LSN');
+  while(Object.keys(s.toUndo).length) {
+    const [tx,cursor]=Object.entries(s.toUndo).sort((a,b)=>b[1]-a[1])[0];
+    const r=s.log.find(record=>record.lsn===cursor);
+    if(cursor===0||r?.type==='BEGIN') {
+      ariesAppend(s,{type:'END',tx});s.flushedLSN=s.log.at(-1).lsn;delete s.transactionTable[tx];delete s.toUndo[tx];emit(`Undo finishes ${tx}; append END`);continue;
+    }
+    if(!r)throw Error(`Missing undo dependency at LSN ${cursor}.`);
+    if(r.type==='CLR') {
+      s.toUndo[tx]=s.undoLink==='undoNextLSN'?ariesUndoNext(r):r.prevLSN;
+      emit(`CLR ${r.lsn} is redo-only: follow ${s.undoLink} to ${s.toUndo[tx]}`);continue;
+    }
+    if(r.type!=='UPDATE'){s.toUndo[tx]=r.prevLSN;emit(`Follow ${r.type} ${r.lsn} to prevLSN ${r.prevLSN}`);continue;}
+    const clr=ariesAppend(s,{type:'CLR',tx,page:r.page,delta:-r.delta,compensates:r.lsn,undoNextLSN:r.prevLSN});
+    emit(`Append CLR ${clr.lsn}: compensate UPDATE ${r.lsn}; undoNextLSN = ${r.prevLSN}`);
+    if(failure==='before-clr-flush'){s.crashes.push({pass:s.pass,at:failure,clr:clr.lsn});emit('Crash before flushing the new CLR; its volatile suffix will be lost');return;}
+    s.flushedLSN=clr.lsn;emit(`Flush CLR ${clr.lsn} before any compensated data page can reach disk`);
+    if(failure==='after-clr-flush'){s.crashes.push({pass:s.pass,at:failure,clr:clr.lsn});emit('Crash with a durable CLR whose page action has not been installed');return;}
+    ariesApply(s,clr);s.undoActions.push({pass:s.pass,tx,update:r.lsn,clr:clr.lsn,page:r.page,delta:clr.delta});
+    emit(`Apply CLR ${clr.lsn} to the buffered page; never compensate the CLR itself`);
+    if(failure==='after-undo-flush'){ariesFlush(s,r.page);s.crashes.push({pass:s.pass,at:failure,clr:clr.lsn});emit('Flush the undo page, then crash before finishing rollback');return;}
+    s.toUndo[tx]=r.prevLSN;
+  }
+  s.flushedLSN=s.log.at(-1)?.lsn||0;
+  for(const page of Object.keys(s.disk))ariesFlush(s,page);
+  s.phase='complete';s.complete=true;emit('Recovery complete: persist final pages for independent verification');
+}
+export function ariesRecovery(config) {
+  choose(config,'undoLink',['prevLSN','undoNextLSN']);
+  choose(config,'failure',['none','before-clr-flush','after-clr-flush','after-undo-flush']);
+  choose(config,'pageFlush',['none','B','B-and-C']);
+  if(!Number.isSafeInteger(config.attempts)||config.attempts<1||config.attempts>6)throw Error('attempts must be an integer from 1 to 6.');
+  const disk={A:{value:100,pageLSN:0},B:{value:100,pageLSN:0},C:{value:100,pageLSN:0}};
+  const s={disk,buffer:copy(disk),log:[],flushedLSN:0,masterCheckpointLSN:0,transactionTable:{},dirtyPageTable:{},toUndo:{},phase:'normal',pass:0,complete:false,undoLink:config.undoLink,redoDecisions:[],undoActions:[],crashes:[]};
+  const t=recorder(s,ariesChecks);
+  for(const tx of ['T1','T2','T3']){ariesAppend(s,{type:'BEGIN',tx});t.emit(`Begin ${tx}`);}
+  for(const [tx,page,delta] of [['T1','A',10],['T2','B',20],['T3','C',7]]){
+    const r=ariesAppend(s,{type:'UPDATE',tx,page,delta});ariesApply(s,r);s.dirtyPageTable[page]??=r.lsn;t.emit(`Append UPDATE ${r.lsn}: ${tx} changes ${page} by ${delta}`);
+  }
+  const cp=ariesAppend(s,{type:'CHECKPOINT',transactions:copy(s.transactionTable),dirtyPages:copy(s.dirtyPageTable)});
+  s.flushedLSN=cp.lsn;s.masterCheckpointLSN=cp.lsn;t.emit('Persist checkpoint metadata without forcing its dirty pages');
+  const extra=ariesAppend(s,{type:'UPDATE',tx:'T2',page:'B',delta:5});ariesApply(s,extra);t.emit(`T2 appends another UPDATE at LSN ${extra.lsn}`);
+  const commit=ariesAppend(s,{type:'COMMIT',tx:'T1'});s.flushedLSN=commit.lsn;t.emit('T1 flushes COMMIT; T2 and T3 remain losers');
+  if(config.pageFlush!=='none'){ariesFlush(s,'B');if(config.pageFlush==='B-and-C')ariesFlush(s,'C');t.emit(`Steal uncommitted ${config.pageFlush} pages after their WAL is durable`);}
+  for(let attempt=0;attempt<config.attempts;attempt++)ariesPass(s,t.emit,attempt<config.attempts-1?config.failure:'none');
+  return t.finish();
+}
+export function recoverAries(original) {
+  const s=copy(original);ariesPass(s);
+  return {state:s,checks:ariesChecks(s),label:'ARIES restart: repeat durable history, then resume losers through CLR undoNextLSN links'};
+}
+mechanismDefinitions.aries={
+  presets:{
+    broken:{undoLink:'prevLSN',failure:'after-undo-flush',pageFlush:'B',attempts:2},
+    repaired:{undoLink:'undoNextLSN',failure:'after-undo-flush',pageFlush:'B',attempts:2},
+    'clr-durable-page-missing':{undoLink:'undoNextLSN',failure:'after-clr-flush',pageFlush:'B',attempts:2},
+    'clr-not-durable':{undoLink:'undoNextLSN',failure:'before-clr-flush',pageFlush:'none',attempts:2},
+    'repeated-crashes':{undoLink:'undoNextLSN',failure:'after-undo-flush',pageFlush:'B-and-C',attempts:4},
+  },
+  boundary:'Optional advanced ARIES core with interleaved winner/loser transactions, TT/DPT analysis, repeat-history redo, redo-only CLRs and highest-LSN undo. Transactions modify disjoint fixed pages with full-transaction rollback only. Checkpoint metadata is captured atomically in one record; no full fuzzy-checkpoint merge, logical index undo, nested top actions, media recovery or production-engine claim. CLR flushes are deliberately conservative.',
+};
+mechanismRunners.aries=ariesRecovery;
+mechanismSources.aries=[ariesUndoNext,ariesExpected,ariesChecks,ariesAppend,ariesApply,ariesFlush,ariesPass,ariesRecovery,recoverAries];

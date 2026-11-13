@@ -1,9 +1,14 @@
-import {publish,visible,hasCycle,validate,needsRedo,upToDate} from './mechanisms.js';
+import {publish,visible,hasCycle,validate,needsRedo,upToDate,ariesUndoNext} from './mechanisms.js';
 const entry=(term,index)=>({term,index});
 const snap={self:8,xmax:10,active:[6]};
 const states={0:'committed',2:'committed',3:'aborted',4:'committed',6:'committed',8:'active',11:'committed'};
 const v=(xmin,xmax=null)=>({xmin,xmax});
 export const benches={
+  aries:{
+    title:'Implement the ARIES undo-chain pointer',contract:'solve(record) returns undoNextLSN for a CLR and prevLSN for an ordinary record. CLRs are redo-only. A zero undoNextLSN means stop; do not fall back to prevLSN.',
+    starter:'function solve(record) {\n  return record.prevLSN; // Does this revisit work already compensated?\n}',reference:ariesUndoNext,
+    cases:[{name:'ordinary UPDATE follows its transaction chain',args:[{type:'UPDATE',prevLSN:5}],expected:5},{name:'CLR skips the UPDATE it already compensated',args:[{type:'CLR',prevLSN:11,undoNextLSN:5}],expected:5},{name:'CLR can skip several rollback records',args:[{type:'CLR',prevLSN:22,undoNextLSN:4}],expected:4},{name:'zero undoNextLSN is a real end marker',args:[{type:'CLR',prevLSN:8,undoNextLSN:0}],expected:0},{name:'BEGIN terminates an ordinary chain',args:[{type:'BEGIN',prevLSN:0}],expected:0},{name:'ABORT continues to prior transaction work',args:[{type:'ABORT',prevLSN:9}],expected:9}]},
+
   'transaction-manager':{
     title:'Implement publication',contract:'solve(base, writes, status) returns a new public object. Publish writes only for status "committed". Keep base and writes unchanged.',
     starter:'function solve(base, writes, status) {\n  return {...base, ...writes}; // Which state permits publication?\n}',reference:publish,

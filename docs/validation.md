@@ -19,7 +19,7 @@ returned to scroll position zero so fixed navigation appears in its normal place
 
 ## Learning-design skill review
 
-All 24 investigations have a practical question, prerequisites, explicit runtime,
+The 24 core investigations and optional ARIES lab have a practical question, prerequisites, explicit runtime,
 prediction, inspectable evidence, a change to try, progressive hints, worked
 reasoning and an independent transfer task. SQL baselines intentionally include
 a false business postcondition; a passing sum alone is insufficient. The course
@@ -30,14 +30,14 @@ requires evidence and additional failure analysis, not a preset completion click
 
 ## Checks executed
 
-- `npm run check`: static build; 80 Node checks for content, local links, real SQL
+- `npm run check`: static build; 92 Node checks for content, local links, real SQL
   and model semantics, including all 512 three-node directed graphs, every repaired
-  log-engine crash prefix, and six implementation contracts; three Python test
+  log-engine crash prefix, and six core implementation contracts and the optional ARIES contract; three Python test
   methods including all native protocol boundaries and repeated replay.
-- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: ten browser journeys
-  covering all 27 generated pages, scenario changes, crash/recovery, SQL errors
+- `CHROMIUM_PATH=/usr/bin/chromium npm run test:browser`: eleven browser journeys
+  covering all 28 generated pages, scenario changes, crash/recovery, SQL errors
   and reset, exported evidence, persisted notes, keyboard and mobile layout.
-  The added journeys execute all six learner-code benches, check edge-case feedback,
+  The added journeys execute all seven learner-code benches, check edge-case feedback,
   code persistence and notebook exports, terminate a nonterminating function, and
   inspect the engine tables, source and editor at desktop/mobile widths.
 - `npm run test:server`: PostgreSQL 17 with independent psql connections; observed
@@ -50,7 +50,7 @@ requires evidence and additional failure analysis, not a preset completion click
 
 The native file tests establish real process restart observations on this Linux
 host, not power-loss durability. Models expose their assumptions and cover small
-specified state spaces. They do not implement PostgreSQL SSI, all of Raft, ARIES with CLRs,
+specified state spaces. They do not implement PostgreSQL SSI, all of Raft, the full ARIES fuzzy-checkpoint/logical-undo protocol,
 a payment connector or a production storage engine. No production throughput
 claim is made. Cross-browser and assistive-technology usability beyond Chromium
 keyboard/layout checks have not been established.
@@ -73,3 +73,26 @@ LSN/checkpoint redo/undo and a bounded replicated log. Write-skew dependencies a
 mode. The final design requires submitted algorithms and internal evidence.
 The trace uses reference code while the separate bench tests learner code; this
 boundary is explicit. Production differences and omitted mechanisms are named.
+
+## Optional advanced ARIES review
+
+A1 is a separate Advanced · Optional navigation group; the 24 core titles and
+numbering remain stable. It links from the WAL/recovery foundation, states its
+prerequisites, and is not required for the core design capstone. The lab includes
+a pointer implementation exercise with zero-pointer edge cases and exact engine
+source. Structured tables distinguish prevLSN, undoNextLSN and the compensated
+UPDATE, alongside transaction status, dirty-page recLSNs and ToUndo.
+
+Reviewed desktop and 390px mobile screenshots. The log table follows the latest records so CLRs are visible; earlier history and
+additional columns scroll within its container; page width remains bounded. Browser checks reproduce faulty double
+undo, exercise repeated corrected restarts, inspect both CLR pointers and verify
+manual restart after completed recovery.
+
+Semantic checks cover every selected repaired trace prefix, 36 combinations of
+CLR/page durability boundaries and repeated-attempt counts, loser redo, CLR
+redo/skip decisions, bounded durable compensation, stable END records and restart
+fixed points. The baseline ends B at 95; the repaired result is A 110, B 100, C 100.
+The model has full-transaction rollback on disjoint fixed pages and an atomic
+checkpoint snapshot; it does not claim full fuzzy-checkpoint merging, savepoints,
+nested top actions, logical index undo or media recovery. Primary references are
+the original Mohan et al. paper and Apache Derby's implementation explanation.

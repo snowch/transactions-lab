@@ -4,7 +4,7 @@ How can a database hide uncommitted work, preserve an old snapshot, or recover a
 
 <div class="hero-actions"><a class="start-link" href="./invariants.html">Enter the laboratory →</a><a href="./transaction-manager.html">Start inside the engine</a></div>
 
-<div class="lab-strip"><span><strong>24</strong> investigations</span><span><strong>6</strong> implementation benches</span><span><strong>0</strong> accounts to create</span></div>
+<div class="lab-strip"><span><strong>24</strong> core investigations</span><span><strong>6</strong> core implementation benches</span><span><strong>0</strong> accounts to create</span></div>
 
 ## Open the engine
 
@@ -37,6 +37,10 @@ Each implementation bench executes your JavaScript against named cases, includin
 <a href="./outbox.html"><span>20—22 / APPLICATION BOUNDARIES</span><h3>Where does the mechanism stop?</h3><p>Connect local commit to outbox relays, idempotency records and compensation state machines.</p></a>
 <a href="./order-workflow.html"><span>23—24 / IMPLEMENTATION REVIEW</span><h3>Can you explain every guarantee?</h3><p>Defend a workflow using internal traces, your algorithm implementations and failure evidence.</p></a>
 </div>
+
+## Optional advanced topic: ARIES
+
+After the WAL and recovery foundation, continue to [A1 · ARIES recovery](./aries.html). Trace interleaved winners and losers, dirty-page/transaction-table analysis, repeat-history redo and compensation log records. Crash during undo and implement the undoNextLSN rule that prevents double undo. This adds one optional implementation bench to the six core benches.
 
 ## Before you begin
 

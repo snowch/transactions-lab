@@ -30,9 +30,12 @@ export const groups = [
     ['order-workflow','Break the order service','model','order-workflow'],
     ['design-review','Defend your transaction','reading']]},
 ];
+groups.push({title:'Advanced · Optional',optional:true,pages:[['aries','A1 · ARIES recovery','model','aries']]});
 let number=0;
-for(const group of groups)for(const page of group.pages)page[1]=`${String(++number).padStart(2,'0')} · ${page[1]}`;
-export const labs = groups.flatMap(g=>g.pages.map(([slug,title,runtime,model])=>({slug,title,runtime,model,group:g.title,file:`chapters/${slug}.md`})));
+for(const group of groups)for(const page of group.pages)if(!group.optional)page[1]=`${String(++number).padStart(2,'0')} · ${page[1]}`;
+export const labs = groups.flatMap(g=>g.pages.map(([slug,title,runtime,model])=>({slug,title,runtime,model,optional:Boolean(g.optional),group:g.title,file:`chapters/${slug}.md`})));
+export const coreLabs=labs.filter(l=>!l.optional);
+export const advancedLabs=labs.filter(l=>l.optional);
 export const pages = [
   {slug:'index',title:'Transactions Lab',file:'chapters/index.md',runtime:'overview'},
   ...labs,

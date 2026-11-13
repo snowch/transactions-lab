@@ -9,7 +9,7 @@ export function renderInternals(container,id,s) {
     for(const name of headings){const th=document.createElement('th');th.textContent=name;head.append(th);}
     const body=table.createTBody();
     for(const row of rows){const tr=body.insertRow();for(const value of row)tr.insertCell().textContent=text(value);}
-    scroll.append(table);container.append(heading,scroll);
+    scroll.append(table);container.append(heading,scroll);return scroll;
   }
   if(id==='transaction-manager')table('Transaction descriptor and publication',['Status','Private writes','Public map'],[[s.status,s.privateWrites,s.public]]);
   if(id==='mvcc'){
@@ -28,6 +28,13 @@ export function renderInternals(container,id,s) {
     table('Buffer pool versus data pages',['Page','Buffered value','Disk value','Disk pageLSN','First dirty recLSN'],Object.keys(s.disk).map(key=>[key,s.buffer[key]?.value,s.disk[key].value,s.disk[key].pageLSN,s.buffer[key]?.recLSN??null]));
     table(`Log records · flushed through LSN ${s.flushedLSN}`,['LSN','Type','Page','Before → after','Durable'],s.log.map(r=>[r.lsn,r.type,r.page??null,r.type==='UPDATE'?`${r.before} → ${r.after}`:'—',r.lsn<=s.flushedLSN?'yes':'buffered']));
     if(s.analysis)table('Recovery analysis',['Winners','Losers','Redo start','Undo restored'],[[s.analysis.winners,s.analysis.losers,s.analysis.redoStartLSN,s.undo]]);
+  }
+  if(id==='aries'){
+    table(`ARIES restart ${s.pass} · ${s.phase}`,['Page','Buffered value / LSN','Disk value / LSN'],Object.keys(s.disk).map(p=>[p,`${s.buffer[p].value} @ ${s.buffer[p].pageLSN}`,`${s.disk[p].value} @ ${s.disk[p].pageLSN}`]));
+    table('Transaction table and highest-LSN undo frontier',['Transaction','Status','lastLSN','ToUndo'],Object.entries(s.transactionTable).map(([tx,t])=>[tx,t.status,t.lastLSN,s.toUndo[tx]??null]));
+    table('Dirty-page table',['Page','recLSN'],Object.entries(s.dirtyPageTable));
+    const log=table(`UPDATEs and redo-only CLRs · durable through ${s.flushedLSN}`,['LSN','Type / tx','Page / delta','prevLSN','undoNextLSN','Compensates','Durable'],s.log.map(r=>[r.lsn,`${r.type}${r.tx?' / '+r.tx:''}`,r.page?`${r.page} / ${r.delta}`:'—',r.prevLSN??null,r.undoNextLSN??null,r.compensates??null,r.lsn<=s.flushedLSN?'yes':'buffered']));
+    log.scrollTop=log.scrollHeight;
   }
   if(id==='replicated-log'){
     table('Replica logs and protocol state',['Node','Live / role','Term','Commit index','Log: index @ term command'],Object.entries(s.nodes).map(([name,n])=>[name,`${n.live?'live':'down'} / ${n.role}`,n.term,n.commitIndex,n.log.map(e=>`${e.index}@${e.term} ${e.command}`).join(' · ')]));

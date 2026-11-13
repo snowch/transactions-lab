@@ -20,6 +20,8 @@ Downloads for a standalone folder: [mechanisms.js](./downloads/mechanisms.js), [
 
 Change the engine itself for a larger project: add a second MVCC snapshot, a new lock mode, predicate validation or a compensation log record. State the new transition and failure rules, then add tests that independently check the resulting history. Inspect the original test suites as examples of boundary and invariant checks, rather than copying their expected outcomes blindly.
 
+For the optional ARIES pointer exercise, download your implementation and run `node web/verify-implementation.mjs aries ./aries-implementation.mjs`. The complete engine module also exports ariesRecovery and recoverAries for scripted restart experiments.
+
 ## Shared PostgreSQL
 
 You need Docker with Compose, Node.js 24 and this repository. The server uses PostgreSQL 17 with no published ports. Its password is for this isolated disposable lab only. Use a unique Compose project if you run multiple checkouts.

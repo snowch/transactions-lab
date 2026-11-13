@@ -1,8 +1,10 @@
 # Transactions Lab
 
-**Build. Trace. Explain.** A 24-investigation, six-part course on how transactions
+**Build. Trace. Explain.** A 24-investigation core course in six parts on how transactions
 work inside databases, storage engines and distributed workflows. Six implementation
-benches execute learner-written algorithms in the browser.
+benches execute learner-written algorithms in the browser. An optional advanced
+[ARIES lab](https://snowch.github.io/transactions-lab/aries.html) adds repeat-history
+redo, CLRs, undoNextLSN and repeated crashes during undo, with a seventh bench.
 
 [Open the lab](https://snowch.github.io/transactions-lab/) ·
 [Curriculum](scripts/catalog.mjs) · [Runtime boundaries](chapters/runtime.md)

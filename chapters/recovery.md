@@ -36,6 +36,10 @@ Undo is a different problem: it reverses unfinished work. ARIES uses compensatio
 
 Do not discard a log prefix simply because a checkpoint exists: dirty-page redo and unfinished-transaction undo can depend on earlier records. Describe both retention dependencies in the design record.
 
+## Optional advanced continuation
+
+[A1 · ARIES recovery](./aries.html) implements redo-only compensation log records and undoNextLSN chains across repeated crashes, with multiple interleaved transactions. Take it after this foundation when you want to extend the recovery machinery.
+
 ## Transfer the idea
 
 A ledger contains two legitimate deposits of the same amount. Explain why deduplicating by amount is incorrect. Choose a transaction or log-record identity and specify how the applied marker becomes atomic with the balance change.

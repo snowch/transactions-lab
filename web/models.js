@@ -1,4 +1,4 @@
-import {mechanismDefinitions,mechanismRunners,recoverEngine} from './mechanisms.js';
+import {mechanismDefinitions,mechanismRunners,recoverEngine,recoverAries} from './mechanisms.js';
 // Explicit, deterministic teaching models. These are not database/storage implementations.
 const clone = value => structuredClone(value);
 const flag = (name, pass) => ({name, pass});
@@ -164,6 +164,7 @@ export function runModel(id, input) {
 
 export function recoverModel(id, state) {
   if(id==='recovery-engine')return recoverEngine(state);
+  if(id==='aries')return recoverAries(state);
   const s=clone(state);
   if(id==='files') {
     const recovered=s.durableName==='old'?'old':s.durableTemp==='new'?'new':'incomplete';
@@ -180,4 +181,4 @@ export function recoverModel(id, state) {
   }
   throw Error('This lab has no crash/recovery transition.');
 }
-export const crashModels = new Set(['files','wal','recovery','recovery-engine']);
+export const crashModels = new Set(['files','wal','recovery','recovery-engine','aries']);

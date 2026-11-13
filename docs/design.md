@@ -81,3 +81,18 @@ inspects tuple creator markers through update/rollback, while the independent
 server extension verifies snapshot stability and changed tuple creator IDs.
 The capstone requires algorithm implementations and internal traces, as well as
 application invariants and failure policies.
+
+## Optional advanced ARIES
+
+A1 is appended as an optional group without renumbering the core. Its recovery
+engine implements transaction/dirty-page analysis, repeat-history UPDATE/CLR redo,
+highest-LSN undo across interleaved losers, ABORT/END bookkeeping and redo-only
+compensation with undoNextLSN. Controlled failures can occur before a CLR flush,
+after its flush but before page application, or after flushing the undo page.
+The general crash control can also restart any revealed prefix.
+
+Independent counter and durable-compensation checks catch a deliberately wrong
+CLR prevLSN traversal. The optional implementation bench tests the proper chain
+rule, including undoNextLSN = 0. Checkpoint metadata is one atomic snapshot and
+transactions own disjoint pages. The chapter explains which full ARIES features
+are omitted and supplies advanced extension tasks rather than claiming them.
