@@ -2,9 +2,11 @@
 
 A transfer changes two pages. The machine can stop after either write. Give recovery enough durable information to choose one complete outcome.
 
-**You will:** Trace write-ahead logging, identify a durable commit record, and recover every prefix of the write sequence. **Prerequisites:** [file persistence ordering](./files.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** trace write-ahead logging, identify a durable commit record, and recover every prefix of the write sequence. **Prerequisites:** [file persistence ordering](./files.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 A **log sequence number (LSN)** identifies a record's position in the recovery log. A page's **pageLSN** identifies the newest logged change installed in that page. A durable log flush preserves a prefix of records; it is different from writing a changed data page. This lab starts with simpler durable/not-durable flags, then the next engine exposes numeric LSNs.
+
+**Write-ahead logging (WAL)** puts a recoverable description of each change on durable storage before its data page. An **after-image** gives the value that recovery should restore after commit.
 
 <!-- concept: wal -->
 
@@ -14,7 +16,7 @@ Compare a crash after Alice’s page install in the in-place baseline with that 
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with Alice and Bob at 100 and no recovery log. Select **Run to end**, then select **Install Alice’s page on disk** in the trace. Select **Crash & recover here** and inspect `disk` and the model check.
 
 <!-- experiment -->
 
@@ -22,17 +24,15 @@ The drawing separates after-images, the commit marker and current disk values. A
 
 ## Inspect the evidence
 
-In the in-place baseline, step to Alice’s installation and crash. The disk contains 70 and 100: neither a complete old nor a complete new transfer. The recovered invariant check should fail. Running to the end without a crash hides this failure.
+Look for Alice at 70 and Bob at 100 in `disk`. The independent model check detects the incomplete pair. Selecting a different trace entry shows that entry’s original state, so you can test several crash points in one run.
 
 ## Change one thing
 
-Choose the WAL repair. Crash before log flush, after log flush, after the durable commit marker, and after each page install. Before the marker, uncommitted log records are ignored. After it, recovery installs both after-images, even if one or neither data page had reached its home.
+Choose **Repair** and select **Run to end** to reveal all the WAL steps. Select **Append both after-images to the log buffer**, **Flush the log records**, **Flush the commit marker after the log records**, and each **Install … page on disk** entry in turn. Select **Crash & recover here** after choosing each entry. Compare `logDurable`, `commitDurable` and the recovered `disk` values. Which event first makes recovery choose the new pair?
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
-
-<details><summary>Hint 1 · Follow the state</summary><p>An after-image is the complete new page value. Write-ahead means the recovery information reaches durable storage before dependent page changes.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>The marker is useful only if recovery can trust that the records it commits are complete and durable first.</p></details>
-<details><summary>Worked explanation</summary><p>The repair changes the crash outcome at the durable commit marker. Before that point disk remains at the old transfer; afterward replay yields 70 and 130. This is a redo-only teaching protocol, not ARIES. It assumes atomic page writes and marker recognition. Real systems need torn-write handling, log validation, transaction identifiers and ordering guarantees.</p></details>
+<details><summary>Find the after-images</summary><p>An after-image is the complete new page value. Write-ahead means the recovery information reaches durable storage before dependent page changes.</p></details>
+<details><summary>Check what the marker covers</summary><p>The marker is useful only if recovery can trust that the records it commits are complete and durable first.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The repair changes the crash outcome at the durable commit marker. Before that point disk remains at the old transfer; afterward replay yields 70 and 130. This is a redo-only teaching protocol, not ARIES. It assumes atomic page writes and marker recognition. Real systems need torn-write handling, log validation, transaction identifiers and ordering guarantees.</p></div>
 
 ## Under the hood: buffers, ordering and group commit
 

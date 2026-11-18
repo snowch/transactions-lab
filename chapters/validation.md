@@ -27,7 +27,7 @@ Atomic validate-and-publish matters. Two threads that both validate, then publis
 
 ## Control the experiment
 
-Inspect each transaction's snapshot, read versions and staged writes. The baseline commits T1 and T2 because their write sets are disjoint. The roster has no doctor left. The repaired validator rejects T2 because its recorded A version differs from the current A version after T1's publication.
+The page loads **Baseline** with A and B available and two decisions made from the same version. Select **Run to end** and inspect both statuses in **Recorded dependencies** and both values in **Committed version store**. Choose **Repair** and run again. Which tested version differs from the current version when T2 tries to commit?
 
 <!-- experiment -->
 
@@ -35,7 +35,7 @@ The diagram separates recorded read versions and private writes, then shows the 
 
 ## Read and implement the validator
 
-The predicate below is the one the engine invokes. The surrounding engine determines which versions are supplied and makes checking plus publication one event; a correct predicate cannot compensate for an incomplete read set or an unsafe publication boundary.
+The surrounding engine supplies the versions and makes checking and publication one event. In the bench, select **Test implementation**. Compare the result for a stale read of a key the transaction does not write. In **Your JavaScript implementation**, return true only when every entry in `readVersions` matches `currentVersions`. A missing current key conflicts. Test again. The engine checks write base versions separately.
 
 <!-- mechanism-source -->
 
@@ -43,11 +43,13 @@ The predicate below is the one the engine invokes. The surrounding engine determ
 
 ## Change one thing
 
-Move T2:begin and its reads to after T1:commit, then remove T2's leaving write because the new decision must keep the last doctor. Verify the fresh read set validates. For a stale-read experiment, keep its old write and explain why a transaction engine still cannot choose the right business operation for the programmer.
+In **Repair**, open **Edit the experiment**. Replace `schedule` with `["T1:begin","T1:read:A","T1:read:B","T1:write:A:false","T1:commit","T2:begin","T2:read:A","T2:read:B","T2:commit"]`. Select **Run to end**. Find T2’s read version of A and its final status.
+
+Insert `"T2:write:B:false"` before `"T2:commit"` and run again. Does T2 validate against fresh versions while still breaking the roster rule? Explain which decision belongs to the application.
 
 <details><summary>Hint 1 · Compare the actual version maps</summary><p>After T1 commits, A has a new version. T2's write-set-only test includes B but omits the stale observation of A.</p></details>
 <details><summary>Hint 2 · Missing keys conflict too</summary><p>If a previously read key disappeared, its current version cannot equal the recorded version. An empty read set is valid, but that does not prove the transaction recorded everything it depended on.</p></details>
-<details><summary>Worked explanation</summary><p>The baseline validates B@0 while A has changed, so the two decisions can both commit. The repair compares A@0 with A@1 and aborts T2 before publishing its private write. This is an OCC implementation with sequential commit validation. PostgreSQL Serializable Snapshot Isolation uses a different mechanism: nonblocking predicate-read tracking and read/write dependency detection. Both must reason about observations, but they are not the same algorithm.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The baseline validates B@0 while A has changed, so the two decisions can both commit. The repair compares A@0 with A@1 and aborts T2 before publishing its private write. This is an OCC implementation with sequential commit validation. PostgreSQL Serializable Snapshot Isolation uses a different mechanism: nonblocking predicate-read tracking and read/write dependency detection. Both must reason about observations, but they are not the same algorithm.</p></div>
 
 ## Transfer the idea
 

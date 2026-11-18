@@ -34,43 +34,49 @@ function download(blob, filename) {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function startLab() {
-  let worker, active, timer, ready=false, busy=false, execution=0, savedCheckpoint=null, operation=null;
-  const status=document.querySelector('#db-status');
-  const checkpointStatus=document.querySelector('#checkpoint-status');
-  const save=document.querySelector('#save-checkpoint');
-  const restore=document.querySelector('#restore-checkpoint');
-  const checkpointDownload=document.querySelector('#download-checkpoint');
-  function setBusy(value) {
-    busy=value;
-    cells.forEach(cell=>cell.querySelector('.run').disabled=busy||!ready);
-    if(save)save.disabled=busy||!ready;
-    if(restore)restore.disabled=busy||!savedCheckpoint;
-    if(checkpointDownload)checkpointDownload.disabled=busy||!savedCheckpoint;
-  }
-  function clearResults() {
-    execution=0;
-    cells.forEach(cell=>{
-      cell.querySelector('.result').replaceChildren();
-      delete cell.dataset.executed;delete cell.dataset.execution;delete cell.dataset.submitted;delete cell.dataset.outcome;
-      cell.querySelector('.execution-note').hidden=true;
-    });
-  }
-  function updateNotes() {
-    for(const cell of cells) {
-      const note=cell.querySelector('.execution-note');
-      note.hidden=!cell.dataset.execution;
-      if(!note.hidden)note.textContent=cell.querySelector('textarea').value!==cell.dataset.executed
-        ? 'SQL edited · output below is from the previous SQL.'
-        : `Execution ${cell.dataset.execution}${Number(cell.dataset.execution)<execution?' · later statements may have changed the database.':''}`;
+  let worker, active, timer, ready = false, execution = 0;
+  const status = document.querySelector('#db-status');
+  const reset = document.querySelector('#reset-db');
+  const setControls = () => {
+    for (const cell of cells) {
+      const button = cell.querySelector('.run');
+      button.disabled = !ready;
+      button.setAttribute('aria-disabled', String(Boolean(active) || !ready));
     }
-  }
+    reset.setAttribute('aria-disabled', String(Boolean(active)));
+  };
+  const activity = (cell, message, error = false) => {
+    const note = cell.querySelector('.sql-activity');
+    note.textContent = message;
+    note.classList.toggle('sql-error', error);
+  };
+  const updateNotes = () => {
+    for (const cell of cells) {
+      const note = cell.querySelector('.execution-note');
+      const output = cell.sqlOutput;
+      note.hidden = !output;
+      if (!output) continue;
+      const edited = cell.querySelector('textarea').value !== output.source;
+      const later = output.execution < execution;
+      const failed = cell.sqlAttempt?.outcome === 'error';
+      note.textContent = edited || failed || later
+        ? `Showing successful execution ${output.execution}. ${edited ? 'SQL edited since this run. ' : ''}${failed ? 'The latest attempt failed.' : later ? 'Later SQL may have changed the database.' : ''}`
+        : `Successful execution ${output.execution}.`;
+    }
+  };
   function render(container,results) {
     container.replaceChildren();
-    for(const result of results) {
-      const note=document.createElement('p');note.className='result-note';
-      note.textContent=result.fields.length
-        ? `${result.totalRows} row(s)${result.totalRows>100?' · showing first 100':''}`
-        : `Statement complete${result.affectedRows!==undefined?` · ${result.affectedRows} affected row(s)`:''}`;
+    const returned = results.filter(result => result.fields.length);
+    if (!returned.length) {
+      const note = document.createElement('p');
+      note.className = 'result-note';
+      note.textContent = 'SQL completed. No rows were returned.';
+      container.append(note);
+    }
+    for (const result of returned) {
+      const note = document.createElement('p');
+      note.className = 'result-note';
+      note.textContent = `${result.totalRows} ${result.totalRows === 1 ? 'row' : 'rows'}${result.totalRows > 100 ? ' (first 100 shown)' : ''}`;
       container.append(note);
       if(!result.rows.length)continue;
       if(result.fields[0]?.name==='QUERY PLAN') {
@@ -90,84 +96,127 @@ function startLab() {
       }
     }
   }
-  function timeout(milliseconds) {
+  const finish = () => {
     clearTimeout(timer);
-    timer=setTimeout(()=>{
-      worker.terminate();ready=false;
-      const message=`Stopped after ${milliseconds/1000} seconds. Reset database to continue.`;
-      if(active)active.querySelector('.result').textContent=message;
-      if(operation==='snapshot')checkpointStatus.textContent=message;
-      status.textContent='Database stopped · reset to start again';active=null;operation=null;setBusy(false);
-    },milliseconds);
+    active = null;
+    setControls();
+  };
+  const fail = (message) => {
+    if (!active) return;
+    const {cell, source, number} = active;
+    cell.sqlAttempt = {source, execution: number, outcome: 'error', error: message};
+    activity(cell, message, true);
+    updateNotes();
+  };
+  function stop(message) {
+    worker?.terminate();
+    ready = false;
+    fail(message);
+    status.textContent = message;
+    finish();
   }
-  function initialize(snapshot=null) {
-    worker?.terminate();clearTimeout(timer);active=null;operation='init';ready=false;setBusy(true);clearResults();
-    status.textContent=snapshot?'Restoring checkpoint into a fresh PostgreSQL instance…':'Starting PostgreSQL and loading the transaction fixtures…';
-    if(snapshot)checkpointStatus.textContent='Restoring checkpoint into a fresh PostgreSQL instance…';
-    worker=new Worker(new URL('./db-worker.js',import.meta.url),{type:'module'});
-    worker.onmessage=({data})=>{
-      clearTimeout(timer);
-      if(data.type==='ready') {
-        ready=true;status.textContent=data.restored?'Ready · checkpoint restored · verify the data':'Ready · private database for this page';
-        status.title=data.version;
-        if(data.restored)checkpointStatus.textContent='Checkpoint restored. Run the verification SQL below.';
-      }else if(data.type==='snapshot') {
-        savedCheckpoint=data.snapshot;
-        checkpointStatus.textContent=`Checkpoint saved · ${(savedCheckpoint.size/1048576).toFixed(1)} MiB. You can now damage the database.`;
-        status.textContent='Ready · recovery checkpoint saved';
-      }else if(data.type==='error') {
-        if(active) {
-          active.dataset.executed=active.dataset.submitted;active.dataset.execution=String(++execution);active.dataset.outcome='error';updateNotes();
-          active.querySelector('.result').textContent=`SQL error: ${data.message}. Any open transaction was rolled back.`;
-        }else if(checkpointStatus)checkpointStatus.textContent=`Checkpoint operation failed: ${data.message}`;
-        status.textContent=ready?'Operation failed · edit and retry, or reset':`Database failed to start: ${data.message}`;
-      }else if(active) {
-        render(active.querySelector('.result'),data.results);
-        active.dataset.executed=active.dataset.submitted;active.dataset.execution=String(++execution);active.dataset.outcome='success';updateNotes();
-        status.textContent='Ready · changes shared by experiments on this page';
+  function initialize() {
+    worker?.terminate();
+    finish();
+    ready = false;
+    execution = 0;
+    for (const cell of cells) {
+      cell.querySelector('.result').replaceChildren();
+      cell.sqlOutput = null;
+      cell.sqlAttempt = null;
+      activity(cell, '');
+    }
+    updateNotes();
+    setControls();
+    status.textContent = 'Preparing the sample database…';
+    const job = new Worker(new URL('./db-worker.js', import.meta.url), {type: 'module'});
+    worker = job;
+    job.onmessage = ({data}) => {
+      if (worker !== job) return;
+      if (data.type === 'ready') {
+        ready = true;
+        status.textContent = 'Ready. Run the numbered SQL cells in order.';
+        status.title = data.version;
+      } else if (data.type === 'error' && active) {
+        const rollback = data.rolledBack ? ' The lab rolled back the open transaction.' : '';
+        const punctuation = /[.?!]$/.test(data.message) ? '' : '.';
+        fail(`SQL error: ${data.message}${punctuation}${rollback}`);
+      } else if (data.type === 'error') {
+        stop(`PostgreSQL could not start: ${data.message}. Use Reset database to retry.`);
+        return;
+      } else if (active) {
+        const {cell, source, number} = active;
+        render(cell.querySelector('.result'), data.results);
+        cell.sqlOutput = {source, execution: number};
+        cell.sqlAttempt = {source, execution: number, outcome: 'success'};
+        activity(cell, '');
+        updateNotes();
       }
-      active=null;operation=null;setBusy(false);
+      finish();
     };
-    worker.onerror=event=>{
-      clearTimeout(timer);ready=false;active=null;operation=null;setBusy(false);
-      status.textContent=`Database worker failed: ${event.message||'reload or reset to retry'}`;
+    job.onerror = event => {
+      if (worker === job) stop(`PostgreSQL stopped: ${event.message || 'Worker error'}. Use Reset database to retry.`);
     };
-    worker.postMessage({type:'init',snapshot});timeout(90000);
+    job.postMessage({type: 'init'});
+    timer = setTimeout(() => stop('PostgreSQL did not start in 90 seconds. Use Reset database to retry.'), 90_000);
   }
-  for(const cell of cells) {
-    const editor=cell.querySelector('textarea'),original=editor.value;
-    cell.querySelector('.restore').addEventListener('click',()=>{editor.value=original;updateNotes();});
-    editor.addEventListener('input',updateNotes);
-    cell.querySelector('.copy').addEventListener('click',async event=>{
-      try{await navigator.clipboard.writeText(editor.value);event.target.textContent='Copied';}
-      catch{editor.focus();editor.select();event.target.textContent='Select and copy';}
-      setTimeout(()=>event.target.textContent='Copy SQL',2000);
-    });
-    const run=()=>{
-      if(!ready||busy)return;
-      active=cell;operation='query';setBusy(true);
-      cell.querySelector('.result').textContent='Running…';status.textContent='Executing SQL…';
-      cell.dataset.submitted=editor.value;worker.postMessage({type:'exec',sql:editor.value});timeout(30000);
+  for (const cell of cells) {
+    const editor = cell.querySelector('textarea');
+    const original = editor.value;
+    const restore = cell.querySelector('.restore');
+    const recover = cell.querySelector('.recover-sql');
+    let previous = null;
+    const editorChanged = () => {
+      restore.hidden = editor.value === original;
+      recover.hidden = previous === null || previous === editor.value;
+      updateNotes();
     };
-    cell.querySelector('.run').addEventListener('click',run);
-    editor.addEventListener('keydown',event=>{
-      if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();run();}
+    restore.addEventListener('click', () => {
+      previous = editor.value;
+      editor.value = original;
+      editorChanged();
+      editor.focus();
+    });
+    recover.addEventListener('click', () => {
+      [editor.value, previous] = [previous, editor.value === original ? null : editor.value];
+      editorChanged();
+      editor.focus();
+    });
+    editor.addEventListener('input', editorChanged);
+    const copy = cell.querySelector('.copy');
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(editor.value); copy.textContent = 'Copied'; }
+      catch { editor.focus(); editor.select(); copy.textContent = 'Select and copy'; }
+      setTimeout(() => { copy.textContent = 'Copy SQL'; }, 2000);
+    });
+    const run = () => {
+      if (!ready || active) return;
+      active = {cell, source: editor.value, number: ++execution};
+      setControls();
+      activity(cell, 'Running SQL…');
+      worker.postMessage({type: 'exec', sql: editor.value});
+      timer = setTimeout(() => stop('SQL stopped after 30 seconds. Use Reset database to continue.'), 30_000);
+    };
+    cell.querySelector('.run').addEventListener('click', run);
+    editor.addEventListener('keydown', event => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); run(); }
+    });
+    cell.evidence = () => ({
+      source: editor.value,
+      output: [...cell.querySelector('.result').children].map(node => node.tagName === 'TABLE'
+        ? [...node.rows].map(row => [...row.cells].map(item => item.textContent).join('\t')).join('\n')
+        : node.textContent).join('\n'),
+      executedSource: cell.sqlOutput?.source ?? null,
+      execution: cell.sqlOutput?.execution ?? null,
+      outcome: cell.sqlOutput ? 'success' : null,
+      lastAttempt: cell.sqlAttempt ?? null,
     });
   }
-  document.querySelector('#download-sql').addEventListener('click',()=>{
-    const sql=cells.map((cell,i)=>`-- Experiment ${i+1}\n${cell.querySelector('textarea').value}`).join('\n\n');
-    download(new Blob([sql],{type:'text/plain'}),`${document.body.dataset.page}.sql`);
+  document.querySelector('#download-sql').addEventListener('click', () => {
+    const sql = cells.map((cell, i) => `-- SQL ${i + 1}\n${cell.querySelector('textarea').value}`).join('\n\n');
+    download(new Blob([sql], {type: 'text/plain'}), `${document.body.dataset.page}.sql`);
   });
-  save?.addEventListener('click',()=>{
-    if(!ready||busy)return;
-    operation='snapshot';setBusy(true);status.textContent='Saving database checkpoint…';
-    checkpointStatus.textContent='Saving the current database files…';worker.postMessage({type:'snapshot'});timeout(60000);
-  });
-  restore?.addEventListener('click',()=>{if(savedCheckpoint&&!busy)initialize(savedCheckpoint);});
-  checkpointDownload?.addEventListener('click',()=>{if(savedCheckpoint)download(savedCheckpoint,'transactions-lab-checkpoint.tar.gz');});
-  document.querySelector('#reset-db').addEventListener('click',()=>{
-    savedCheckpoint=null;if(checkpointStatus)checkpointStatus.textContent='No checkpoint saved.';initialize();
-  });
+  reset.addEventListener('click', () => { if (!active) initialize(); });
   initialize();
 }
 function revealAnchor() {

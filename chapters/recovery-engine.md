@@ -4,6 +4,8 @@ A buffer pool can write an uncommitted page before commit and leave a committed 
 
 **You will:** trace before/after log records, dirty-page recLSNs, pageLSNs, a checkpoint and analysis/redo/undo. **Prerequisites:** [WAL ordering and commit](./wal.html). **Runtime:** an executable single-writer log and page engine, not a production storage manager.
 
+A **winner** has a durable COMMIT. A **loser** has unfinished work that recovery must undo. A **checkpoint** records metadata about active transactions and modified pages so restart can recover its work list.
+
 <!-- concept: recovery -->
 
 ## Predict
@@ -29,13 +31,13 @@ A **log sequence number (LSN)** orders log records. WAL requires `flushedLSN >= 
 
 ## Control the experiment
 
-In the baseline, step to Flush alice and crash before the checkpoint. The disk contains an uncommitted debit with no durable undo record. Recovery has no information to repair it. Running the whole transfer first hides this failure.
+The page loads **Baseline** with two balances of 100 and write-ahead ordering disabled. Select **Run to end** to reveal the schedule, then select **Flush alice without enforcing write-ahead ordering** and **Crash & recover here**. Compare Alice’s disk value with the durable log. Which evidence is missing for undo?
 
 <!-- experiment -->
 
 The log strip distinguishes durable records from buffered records. Below it, buffer and disk pages display their actual pageLSNs. An unsafe disk page is marked when it gets ahead of the durable log. These are logical record positions, not measured I/O time or byte widths.
 
-Repair flushes Alice's log dependency before its page. Crash after that flush: recovery finds no COMMIT, classifies T1 as a loser and restores its before-image. Run to COMMIT and crash: recovery finds a winner, redoes the missing Bob page and preserves the transfer. The loser scenario checkpoints an active transaction; the checkpoint does not commit it.
+Choose **Repair** and select **Run to end**. Revisit **Flush alice only after flushing its WAL dependency**, then select **Crash & recover here**. Find T1 under **Losers** and Alice’s restored value under **Undo decisions**. Select the final **Flush COMMIT** step and crash again. Which transaction is now a winner, and which page needed redo?
 
 ## Restart in three phases
 
@@ -49,17 +51,21 @@ This implementation retains the whole log and uses a simple undo pass. It is **n
 
 ## Implement the redo guard
 
-The starter reapplies a record when pageLSN equals recordLSN. Correct that boundary and explain the idempotence it provides. Then read the engine's recovery trace and identify every skipped versus applied record.
+Select **Test implementation** and inspect the equality case. In **Your JavaScript implementation**, return true only when `pageLSN < recordLSN`. Test again. Compare that rule with the **Redo decisions** from a repair where a page has already been installed.
 
 <!-- implementation -->
 
 ## Change one thing
 
-Remove checkpoint from the repaired schedule. Compare the dirty-page table and redo scan start. Add flush:bob after commit and verify recovery skips the already installed page. Replace update:alice:-30 with two update:alice:-15 operations, keeping the total debit and credit unchanged. Inspect prevLSN links and reverse-order undo before commit, then confirm the original transfer after commit. Use loser to test your active-checkpoint prediction.
+Choose **loser**, select **Run to end**, then **Crash & recover here**. In **Recovery analysis** and **Undo decisions**, check whether the checkpoint committed T1 or retained an earlier UPDATE needed for undo.
+
+Choose **Repair** and open **Edit the experiment**. Delete `"checkpoint"` from `schedule`, select **Run to end**, then **Crash & recover here**. Compare **Redo start** with a repaired run that keeps the checkpoint. Restore the scenario, append `"flush:bob"` after `"commit"`, run and crash again. Is Bob’s UPDATE applied or skipped under **Redo decisions**?
+
+Restore the scenario again. Replace `"update:alice:-30"` with `"update:alice:-15", "update:alice:-15"`. Run to end to reveal the steps and inspect the `prevLSN` chain in **Log records**. Crash at the Alice flush before COMMIT, then at the final COMMIT. Compare the order of restored values and the final **Disk value** for each page.
 
 <details><summary>Hint 1 · Separate durable facts from buffered intentions</summary><p>Crash discards the log suffix after flushedLSN and every volatile frame. Recovery can use only the retained log and disk images, plus acknowledged outcomes held by the outside observer.</p></details>
 <details><summary>Hint 2 · A checkpoint is not a commit or automatic log truncation</summary><p>An active transaction can have records before the checkpoint that undo still needs. A dirty page can have an older recLSN that redo still needs. The checkpoint records those dependencies rather than erasing them.</p></details>
-<details><summary>Worked explanation</summary><p>Enforcing WAL makes an uncommitted page flush recoverable because its before-image survives first. No-force commit is recoverable because after-images and COMMIT survive even when a data page does not. The pageLSN guard skips durable work already installed. A checkpoint can shorten reconstruction without making all earlier log records disposable. The transfer verifier is independent of the engine's completion status.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>Enforcing WAL makes an uncommitted page flush recoverable because its before-image survives first. No-force commit is recoverable because after-images and COMMIT survive even when a data page does not. The pageLSN guard skips durable work already installed. A checkpoint can shorten reconstruction without making all earlier log records disposable. The transfer verifier is independent of the engine's completion status.</p></div>
 
 ## Optional advanced continuation
 

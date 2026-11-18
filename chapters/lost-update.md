@@ -2,7 +2,7 @@
 
 Two reservations succeed, but the stock falls only once. Force the schedule that a quick happy-path test would miss.
 
-**You will:** Trace a stale read, identify a lost update, and move a decision into an atomic conditional operation. **Prerequisites:** [conditional reservations](./constraints.html) and [version visibility](./mvcc.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** trace a stale read, identify a lost update, and move a decision into an atomic conditional operation. **Prerequisites:** [conditional reservations](./constraints.html) and [version visibility](./mvcc.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 <!-- concept: lostUpdate -->
 
@@ -12,25 +12,23 @@ The diagram uses stock = 2. Predict the same overlapping read/write schedule wit
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with two bicycles and both reads before either write. Select **Step** until both writes have run. Read `reads`, `stock` and `reservations` to see whether both promises are backed by stock.
 
 <!-- experiment -->
 
 ## Inspect the evidence
 
-Step through the baseline. A and B each read 2, then each writes 1. Inspect both the stock and the number of reservations. The total available plus reserved must equal the initial stock. The FAIL is the point where the second successful request becomes unaccounted for.
+Step through the baseline. A and B each read 2, then each writes 1. Inspect both the stock and the number of reservations. The total available plus reserved must equal the initial stock. The conservation check reports a violation at the second successful request.
 
 ## Change one thing
 
-Edit only the baseline schedule to ["A.read", "A.write", "B.read", "B.write"]. Does the failure disappear? Restore the baseline before the next comparison.
+Open **Edit the experiment** in **Baseline**. Replace `schedule` with `["A.read", "A.write", "B.read", "B.write"]`. Select **Run to end** and compare the final `stock` and `reservations`. Does the conservation check still report a violation?
 
-Select Repair and inspect the changed-setting notice: this preset changes both strategy and stock. First set stock back to 2, keeping the overlapping schedule, so only strategy differs from the baseline. Compare conservation. Then test your prediction with stock = 3 under each strategy, holding stock and schedule equal within that pair. Finally change repaired stock to 1 and verify that one client is rejected. A different starting stock is a different experiment.
+Select **Restore scenario** to return to the overlapping schedule. Select **Repair**. It changes `strategy` and `stock`. In **Edit the experiment**, set `stock` to `2` and select **Run to end**. Compare the conservation check with the original run. Then repeat with `stock` set to `3` under **Baseline** and under **Repair**, keeping the default schedule in both. Finally set `stock` to `1` in **Repair**, run again, and identify the client in `rejected`.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
-
-<details><summary>Hint 1 · Follow the state</summary><p>Follow the value each client read. A later write does not automatically recompute that old value.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>Compare a separately computed SET stock = 1 with SET stock = stock - 1 WHERE stock > 0. The latter makes the predicate and change one operation.</p></details>
-<details><summary>Worked explanation</summary><p>The bad interleaving ends with stock 1 and two reservations from an initial stock of 2. A serial schedule hides the bug. The conditional repair evaluates the current stock at its modeled atomic write, so with one item the second request is rejected. In a real database the statement, isolation level, error handling and transaction boundary determine the exact behavior.</p></details>
+<details><summary>Read the earlier stock value</summary><p>Follow the value each client read. A later write does not automatically recompute that old value.</p></details>
+<details><summary>Keep the reservation in the transaction</summary><p>Compare a separately computed SET stock = 1 with SET stock = stock - 1 WHERE stock > 0. The latter makes the predicate and change one operation.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The bad interleaving ends with stock 1 and two reservations from an initial stock of 2. A serial schedule hides the bug. The conditional repair evaluates the current stock at its modeled atomic write, so with one item the second request is rejected. In a real database the statement, isolation level, error handling and transaction boundary determine the exact behavior.</p></div>
 
 ## Under the hood: locking a write does not refresh an application value
 

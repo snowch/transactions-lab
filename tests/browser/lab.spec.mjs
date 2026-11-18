@@ -32,10 +32,11 @@ test('a learner changes a schedule, sees the violation disappear, and exports ex
   await expect(page.locator('.checks .fail')).toHaveCount(1);
   await page.locator('.config-panel summary').click();
   await page.getByRole('textbox',{name:'Experiment configuration'}).fill(JSON.stringify({...definitions['lost-update'].presets.broken,schedule:['A.read','A.write','B.read','B.write']}));
-  await expect(page.getByRole('button',{name:'Download run evidence'})).toBeDisabled();
+  await expect(page.locator('.export-run')).toBeDisabled();
   await page.getByRole('button',{name:'Run to end',exact:true}).click();
   await expect(page.locator('.checks .fail')).toHaveCount(0);
   const downloadPromise=page.waitForEvent('download');
+  await page.locator('.run-tools summary').click();
   await page.getByRole('button',{name:'Download run evidence'}).click();
   const download=await downloadPromise;const stream=await download.createReadStream();let content='';for await(const data of stream)content+=data;
   const record=JSON.parse(content);expect(record.input.schedule).toEqual(['A.read','A.write','B.read','B.write']);expect(record.trace.at(-1).state.reservations).toBe(2);
@@ -50,7 +51,10 @@ test('a learner changes a schedule, sees the violation disappear, and exports ex
 test('crash recovery examines the selected prefix and repeated replay',async({page})=>{
   await page.goto('wal.html');
   await page.getByRole('button',{name:'Run to end',exact:true}).click();
-  await page.getByRole('button',{name:'1. Install Alice’s page on disk',exact:true}).click();
+  const alice = page.getByRole('button',{name:'1. Install Alice’s page on disk',exact:true});
+  await alice.press('Enter');
+  await expect(alice).toBeFocused();
+  await expect(page.getByRole('button',{name:'2. Install Bob’s page on disk',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Crash & recover here',exact:true}).click();
   await expect(page.locator('.checks .fail')).toHaveCount(1);
   await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
@@ -72,13 +76,26 @@ test('SQL is genuinely executable, errors roll back, edits are marked and reset 
   const cells=page.locator('.sql-cell');
   for(let i=0;i<3;i++){
     await cells.nth(i).getByRole('button',{name:'Run SQL',exact:true}).click();
-    await expect(page.locator('#db-status')).toContainText('Ready');
+    await expect(cells.nth(i).locator('.execution-note')).toContainText('Successful execution');
   }
   await expect(cells.nth(2).locator('.result')).toContainText('130');
+  const successfulSource = await cells.nth(2).locator('textarea').inputValue();
   await cells.nth(2).locator('textarea').fill('BEGIN; UPDATE accounts SET balance=-1 WHERE id=\'alice\'; COMMIT;');
   await expect(cells.nth(2).locator('.execution-note')).toContainText('SQL edited');
   await cells.nth(2).getByRole('button',{name:'Run SQL',exact:true}).click();
-  await expect(cells.nth(2).locator('.result')).toContainText('SQL error');
+  await expect(cells.nth(2).locator('.sql-activity')).toContainText('SQL error');
+  await expect(cells.nth(2).locator('.result')).toContainText('130');
+  await expect(cells.nth(2).locator('.execution-note')).toContainText('The latest attempt failed');
+  await page.locator('.notebook-tools summary').click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button',{name:'Download notebook + evidence'}).click();
+  const notebook = JSON.parse(await readFile(await (await downloadPromise).path(),'utf8'));
+  const evidence = notebook.sql[2];
+  expect(evidence.executedSource).toBe(successfulSource);
+  expect(evidence.output).toContain('bob\t130');
+  expect(evidence.lastAttempt.outcome).toBe('error');
+  expect(evidence.lastAttempt.source).toBe(evidence.source);
+  expect(evidence.lastAttempt.source).not.toBe(evidence.executedSource);
   await cells.nth(2).locator('textarea').fill('SELECT sum(balance) AS total FROM accounts;');
   await cells.nth(2).getByRole('button',{name:'Run SQL',exact:true}).click();
   await expect(cells.nth(2).locator('.result')).toContainText('200');
@@ -90,13 +107,14 @@ test('SQL is genuinely executable, errors roll back, edits are marked and reset 
 test('notebook persists drafts and exports the current executed inputs and evidence',async({page})=>{
   await page.goto('idempotency.html');
   await page.locator('[data-note=prediction]').fill('I expect the retry to charge twice.');
-  await page.locator('.design-record summary').click();
+  await page.getByText('Write your design notes',{exact:true}).click();
   await page.locator('[data-note=invariant]').fill('One charge per logical order.');
   await page.reload();
   await expect(page.locator('[data-note=prediction]')).toHaveValue('I expect the retry to charge twice.');
-  await page.locator('.design-record summary').click();
+  await page.getByText('Write your design notes',{exact:true}).click();
   await expect(page.locator('[data-note=invariant]')).toHaveValue('One charge per logical order.');
   await page.getByRole('button',{name:'Run to end',exact:true}).click();
+  await page.locator('.notebook-tools summary').click();
   const pending=page.waitForEvent('download');
   await page.getByRole('button',{name:'Download notebook + evidence'}).click();
   const stream=await(await pending).createReadStream();let body='';for await(const chunk of stream)body+=chunk;
@@ -141,7 +159,7 @@ test('all implementation benches execute learner code, report edge cases and acc
   for(const [id,bench] of Object.entries(benches)){
     await page.goto(`${id}.html`);
     await page.getByRole('button',{name:'Test implementation',exact:true}).click();
-    await expect(page.locator('.implementation-status')).toContainText('inspect the failing inputs');
+    await expect(page.locator('.implementation-status')).toContainText('Inspect the failing inputs');
     await expect(page.locator('.implementation-results .fail')).not.toHaveCount(0);
     await page.getByRole('textbox',{name:'Your JavaScript implementation',exact:true}).fill(referenceSource(id));
     await expect(page.locator('.implementation-results>li')).toHaveCount(0);
@@ -158,6 +176,7 @@ test('implementation code persists, nonterminating code is bounded and notebook 
   const code=page.getByRole('textbox',{name:'Your JavaScript implementation',exact:true});
   await code.fill(referenceSource('mvcc'));await page.reload();await expect(code).toHaveValue(referenceSource('mvcc'));
   await page.getByRole('button',{name:'Test implementation',exact:true}).click();await expect(page.locator('.implementation-status')).toContainText('10 / 10 cases passed');
+  await page.locator('.notebook-tools summary').click();
   const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Download notebook + evidence'}).click();
   const stream=await(await pending).createReadStream();let data='';for await(const chunk of stream)data+=chunk;
   const book=JSON.parse(data);expect(book.implementations[0].testedSource).toBe(referenceSource('mvcc'));expect(book.implementations[0].results.every(r=>r.pass)).toBe(true);
@@ -165,6 +184,10 @@ test('implementation code persists, nonterminating code is bounded and notebook 
   await expect(page.locator('.implementation-status')).toContainText('Stopped after 2 seconds',{timeout:10000});
   await code.fill('function solve(');await page.getByRole('button',{name:'Test implementation',exact:true}).click();await expect(page.locator('.implementation-status')).toContainText('Cannot test');
   await page.getByRole('button',{name:'Restore starter',exact:true}).click();await expect(code).toHaveValue(benches.mvcc.starter);
+  await page.reload();
+  await expect(code).toHaveValue(benches.mvcc.starter);
+  await page.getByRole('button',{name:'Recover draft',exact:true}).click();
+  await expect(code).toHaveValue('function solve(');
 });
 
 test('internal tables, source and implementation editor remain usable at desktop and mobile widths',async({page})=>{
@@ -310,7 +333,7 @@ test('learners can identify a confounded preset and make a controlled comparison
   await expect(note).toContainText('Baseline settings');
   await page.getByRole('combobox',{name:'Experiment scenario'}).selectOption('repaired');
   await expect(note).toHaveAttribute('data-changed-fields','strategy,stock');
-  await expect(note).toContainText('Several settings changed');
+  await expect(note).toContainText('Match the other settings to test one change');
   await page.locator('.config-panel summary').click();
   await page.getByRole('textbox',{name:'Experiment configuration'}).fill(JSON.stringify({...definitions['lost-update'].presets.repaired,stock:2}));
   await expect(note).toHaveAttribute('data-changed-fields','strategy');
@@ -318,7 +341,7 @@ test('learners can identify a confounded preset and make a controlled comparison
   const result=JSON.parse(await page.locator('.model-state').textContent());
   expect(result.stock).toBe(0);expect(result.reservations).toBe(2);await expect(page.locator('.checks .fail')).toHaveCount(0);
   await page.getByRole('textbox',{name:'Experiment configuration'}).fill('{');
-  await expect(note).toContainText('not readable');await expect(page.getByRole('button',{name:'Download run evidence'})).toBeDisabled();
+  await expect(note).toContainText('invalid JSON');await expect(page.locator('.export-run')).toBeDisabled();
   await page.getByRole('button',{name:'Restore scenario'}).click();
   await expect(note).toHaveAttribute('data-changed-fields','strategy,stock');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

@@ -1,6 +1,6 @@
 # Build the transaction manager.
 
-A database promises one transaction outcome for the work between BEGIN and its commit or rollback. Inside the engine, a transaction manager tracks that attempt, retains its tentative work, and controls when other readers can observe it. Build the mechanism behind that promise.
+A transaction manager tracks work between BEGIN and commit or rollback. Follow when tentative writes become visible to other readers, then implement the rule that publishes them.
 
 **You will:** implement publication of a write set, trace commit and abort state transitions, and explain which guarantees this mechanism does and does not provide. **Prerequisites:** [invariants](./invariants.html) and JavaScript objects/maps. **Runtime:** an executable single-writer engine, followed by a JavaScript implementation bench.
 
@@ -29,31 +29,31 @@ The single publish transition is the **linearization point for this model's publ
 
 ## Control the experiment
 
-Step the baseline. The writer exposes Alice immediately, and the next observation captures a total of 170. Even if later undo restores both accounts, it cannot make that earlier reader forget the partial state.
+The page loads **Baseline** with one writer and two balances of 100. Select **Step** until **Another reader samples the public state**. In **Reader observations retained across commit or abort**, inspect the recorded `Total` and compare it with the `Public map` at the end.
 
 <!-- experiment -->
 
 The diagram separates the private write set from public values. Step across publication and watch which store changes; the arrows show the model’s publication path, not disk persistence.
 
-Select Repair. Watch the tentative values accumulate separately from public data. The transaction passes through committing before publication. To test your abort prediction, select abort, run it, then change only publication from commit to each-write. Compare the observations array as well as the final public map: abort can restore data without retracting an earlier observation.
+Choose **Repair**, then select **Step** through **Enter committing** and **Publish the complete write set**. Compare **Private writes** with the **Public map** at both steps. Choose **abort** and select **Run to end**. Open **Edit the experiment**, replace `"publication": "commit"` with `"publication": "each-write"`, and run again. Compare the `Total` column of the observations and the final map. Do matching final maps guarantee that both histories kept the debit private?
 
-The observation table retains what each reader actually saw. Its history check stays failed after an exposed partial read, even if the final public map is later repaired. The current-map check answers a different, narrower question.
+The observation table retains earlier reads. The history check reports a violation if any reader saw a partial transfer, even after a later step restores the public map. The current-map check answers a different, narrower question.
 
 ## Read the algorithm
 
-The actual `publish` function returns a new map only for the committed state. `transactionManager` owns staging, before-images, observations and valid terminal transitions. Expanding the code shows the functions that generated your trace, rather than pseudocode claiming a stronger engine.
+The engine’s `publish` function copies the public map and merges tentative writes once the descriptor is committed. Open **Read the engine code executed by this lab** to inspect how the engine stages writes and restores earlier values on abort.
 
 <!-- mechanism-source -->
 
 ## Implement it
 
-The starter publishes too early. Implement the state guard while preserving the original input objects. Test active, aborted, committed and empty write sets. Then explain why simply adding this guard would still be insufficient for a concurrent durable database.
+Select **Test implementation** in the bench below. Open a failing case and compare its `expected` and `actual` maps. In **Your JavaScript implementation**, change `solve` so writes are merged only when `status` is `"committed"`. Return a fresh map in all cases. Test again and explain which case would detect premature publication.
 
 <!-- implementation -->
 
 <details><summary>Hint 1 · Find the publication boundary</summary><p>A reader must obtain either the old public map or the new public map. Writing the two keys in separate public steps leaves a boundary between them.</p></details>
 <details><summary>Hint 2 · Separate the descriptor from the storage</summary><p>Use status to decide whether to merge. Do not mutate base while preparing the result. Aborting the private-write-set implementation can discard staged work.</p></details>
-<details><summary>Worked explanation</summary><p>The baseline violates public atomic visibility at its first write. The repair stages both values and publishes one complete set. Abort discards its private changes. This is an implementation of one atomicity/visibility strategy under one-writer event ordering. It does not enforce the application invariant, detect conflicts or flush a commit record; the later mechanisms supply those responsibilities.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The baseline violates public atomic visibility at its first write. The repair stages both values and publishes one complete set. Abort discards its private changes. This is an implementation of one atomicity/visibility strategy under one-writer event ordering. It does not enforce the application invariant, detect conflicts or flush a commit record; the later mechanisms supply those responsibilities.</p></div>
 
 ## Transfer the idea
 

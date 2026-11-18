@@ -2,7 +2,7 @@
 
 A holds the bicycle. B holds the helmet. Each needs the other item before it can finish.
 
-**You will:** Construct a wait-for cycle, distinguish blocking from deadlock, and remove the cycle through consistent acquisition order. **Prerequisites:** [lock compatibility and queues](./lock-manager.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** construct a wait-for cycle, distinguish blocking from deadlock, and remove the cycle through consistent acquisition order. **Prerequisites:** [lock compatibility and queues](./lock-manager.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 <!-- concept: locks -->
 
@@ -12,7 +12,7 @@ If A acquires bike then helmet and B acquires helmet then bike, can either compl
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with opposite resource orders. Select **Step** through **A waits for helmet, owned by B** and then **B waits for bike, owned by A**. Watch the second wait close the cycle in the graph.
 
 <!-- experiment -->
 
@@ -24,13 +24,11 @@ Step through the ownership and waiting maps. An edge A → B means A needs a res
 
 ## Change one thing
 
-Run the consistent-order repair. B waits for bike before obtaining any second lock; A can acquire helmet and finish. Trace when each lock is released. Then explain why an application still needs transaction-level retries if another code path acquires resources differently.
+Choose **Repair** and select **Run to end**. Revisit **B waits for bike, owned by A** and **A commits and releases both locks** in the trace. What prevents the one-way wait from becoming a cycle? Compare `waiting`, `committed` and the model check with **Baseline**.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
-
-<details><summary>Hint 1 · Follow the state</summary><p>Write down every held lock before writing down the next requested lock.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>A timeout limits waiting. It does not establish why the wait occurred or prove that a whole workflow has been rolled back.</p></details>
-<details><summary>Worked explanation</summary><p>Opposite acquisition order produces A waiting for B and B waiting for A. Consistent order prevents this cycle in the two-resource model. A real PostgreSQL server detects deadlocks and aborts a transaction; applications must handle that error. The model does not pick a victim or measure detector delay.</p></details>
+<details><summary>Follow the two wait edges</summary><p>Write down every held lock before writing down the next requested lock.</p></details>
+<details><summary>Release the victim’s locks</summary><p>A timeout limits waiting. It does not establish why the wait occurred or prove that a whole workflow has been rolled back.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>Opposite acquisition order produces A waiting for B and B waiting for A. Consistent order prevents this cycle in the two-resource model. A real PostgreSQL server detects deadlocks and aborts a transaction; applications must handle that error. The model does not pick a victim or measure detector delay.</p></div>
 
 ## Under the hood: from ownership to a wait edge
 

@@ -23,17 +23,17 @@ A lock-table entry contains holders and a FIFO request queue. A blocked transact
 
 ## Control the experiment
 
-Both shared requests are granted. Each upgrade is queued because the other transaction still owns S. The manager derives A → B and B → A from those actual requests. The baseline detector reports the cycle but takes no action.
+The page loads **Baseline** with two shared requests, two upgrades and a cycle check. Select **Step** through both upgrades. Compare **Granted owners**, **Waiting requests** and the arrows in the wait-for graph. Which request closes the cycle?
 
 <!-- experiment -->
 
 The wait-for drawing uses directed arrows from each waiting transaction to its blockers. Step through both upgrades and the detector: the cycle appears before the victim aborts, then disappears when its ownership and queued request are removed.
 
-Repair chooses the youngest participant in a detected cycle, aborts it, removes its queued and held locks, and wakes the surviving upgrade. Observe the resulting X owner and the emptied queue. Victim choice affects wasted work and fairness; it does not change the definition of a cycle.
+Choose **Repair** and select **Run to end**. The detector chooses the younger transaction to abort. Check **Granted owners** and **Waiting requests**. Which transaction can now acquire X, and why?
 
 ## The detector algorithm
 
-Depth-first search keeps a recursion-stack set and a completed set. Encountering a node already on the current recursion stack proves a directed cycle. Encountering an already completed node does not: two branches can share the same downstream owner without deadlocking. The diamond case in the bench catches that common mistake.
+Depth-first search keeps a recursion-stack set and a completed set. Encountering a node already on the current recursion stack proves a directed cycle. Encountering an already completed node does not: two branches can share the same downstream owner without deadlocking. Select **Test implementation** and inspect the diamond case. In **Your JavaScript implementation**, track the nodes on the current search path separately from completed nodes. Test again and compare the diamond with a real cycle.
 
 <!-- mechanism-source -->
 
@@ -41,11 +41,11 @@ Depth-first search keeps a recursion-stack set and a completed set. Encountering
 
 ## Change one thing
 
-Use `["A:X:bike", "B:S:bike", "A:commit", "B:commit"]`. B waits, A releases, and B's queued request is granted. There is no cycle. Try an upgrade with only one shared owner and explain why it can be granted without waiting. Attempt another operation from a waiting transaction; the engine rejects that impossible schedule.
+In **Repair**, open **Edit the experiment** and set `schedule` to `["A:X:bike", "B:S:bike", "A:commit", "B:commit"]`. Select **Run to end**, then revisit **B requests S on bike: queued** and **A commits**. Compare the owners and queue before and after release. Run `["A:S:bike", "A:X:bike"]` next. Why can one owner upgrade without waiting? Finally run `["A:X:bike", "B:S:bike", "B:X:bike"]` and read the input error for an operation from a blocked transaction.
 
 <details><summary>Hint 1 · Build dependencies from actual blockers</summary><p>For each queued request, identify conflicting holders and earlier incompatible queued requests. A long wait alone is not a cycle.</p></details>
 <details><summary>Hint 2 · Use two traversal sets</summary><p>The active DFS stack and the fully explored set have different meanings. Mark a node finished only after exploring its outgoing edges.</p></details>
-<details><summary>Worked explanation</summary><p>The upgrade cycle exists because each transaction holds a shared lock that prevents the other's exclusive request. Aborting B releases its S lock and removes its queued X request, allowing A to upgrade. A production abort must also undo B's data changes, cancel its waits and preserve recovery correctness. This lock-table engine models ownership and scheduling; the transaction manager and recovery engine explain the other responsibilities.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The upgrade cycle exists because each transaction holds a shared lock that prevents the other's exclusive request. Aborting B releases its S lock and removes its queued X request, allowing A to upgrade. A production abort must also undo B's data changes, cancel its waits and preserve recovery correctness. This lock-table engine models ownership and scheduling; the transaction manager and recovery engine explain the other responsibilities.</p></div>
 
 ## Transfer the idea
 

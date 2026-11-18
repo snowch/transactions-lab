@@ -28,17 +28,17 @@ Then a tuple is visible if its creator is visible and its deleter/superseder is 
 
 ## Control the experiment
 
-The reader receives ID 1 and pins a snapshot. The writer receives ID 2. UPDATE marks v0's xmax = 2 and appends v2 with xmin = 2. Commit changes the status table; it does not replace the old reader's snapshot.
+The page loads **Baseline** with one version worth 100 and a schedule that starts the reader before the writer. Select **Step** through the update and commit. In **Physical tuple versions**, follow `Creator xmin` and `Superseder xmax`. Compare the writer’s status with the reader’s pinned snapshot.
 
 <!-- experiment -->
 
 The version chain outlines the tuple visible to the selected snapshot and labels every hidden version. In the Read Committed scenario, the drawing explicitly projects a fresh statement’s view from the current state. Follow xmin/xmax and compare the selected tuple with the retained version table.
 
-The baseline vacuum keeps only what a new reader sees, removing v0 too early. The old reader then has no visible row. Repair retains versions visible to the pinned snapshot and versions belonging to active creators. Try new-snapshot: Read Committed obtains a fresh snapshot per statement and can read 70 after the writer commits.
+At the last read, **Baseline** has removed `v0` too early. Run **Repair** and compare the version table and **Observed values**. Then run **new-snapshot**. It uses a fresh statement snapshot, so the reader may see 70 after the writer commits.
 
 ## Inspect and implement visibility
 
-The engine calls this predicate for reads and for retention. The implementation bench tests independent cases including active-at-snapshot creators, aborted deletes and the reader's own writes. Read the rule before opening the reference solution.
+The same visibility rule supports reads and version retention. Select **Test implementation** to see which cases the starter misses. In **Your JavaScript implementation**, use the creator and superseder rules above. Test again, especially the active-at-capture creator, aborted superseder and reader’s own write.
 
 <!-- mechanism-source -->
 
@@ -46,11 +46,13 @@ The engine calls this predicate for reads and for retention. The implementation 
 
 ## Change one thing
 
-Move begin-writer before begin-reader, leaving the writer active at snapshot capture. Now the writer's ID can be below the reader's upper boundary and still be invisible because it is in the active set. Replace commit-writer with abort-writer; check both the aborted new tuple and the old tuple's aborted xmax. Move vacuum before commit and verify that the repaired engine retains the active writer's potential future version.
+Choose **Repair** and open **Edit the experiment**. In `schedule`, move `"begin-writer"` to the first position, before `"begin-reader"`; keep the other operations in order. Select **Run to end**. Check the `active` list in **Pinned snapshot** and the last **Observed values**. Why can a lower transaction ID still be invisible?
+
+Replace `"commit-writer"` with `"abort-writer"` and run again. Compare the writer’s status, `Superseder xmax` on the old version and the final observed value. Restore the **Repair** schedule. Move `"vacuum"` immediately before `"commit-writer"`, run, then select the vacuum step in the trace. Which versions did it retain while the writer was still active?
 
 <details><summary>Hint 1 · Test creation and deletion separately</summary><p>Apply the same snapshot membership question to xmin and xmax. A visible creator plus an invisible deleter means the old tuple remains visible.</p></details>
 <details><summary>Hint 2 · Commit time is not snapshot membership</summary><p>An ID below the snapshot boundary may have been active at capture. Its later commit does not move it into that historical snapshot.</p></details>
-<details><summary>Worked explanation</summary><p>The pinned reader keeps seeing 100 while a new snapshot sees 70. Removing v0 because a current reader prefers v2 destroys the old snapshot's history. The repair retains versions needed by its explicit pin set and active creators. PostgreSQL uses visibility horizons and more metadata, including command IDs, subtransactions, wraparound handling and tuple-header flags; this small predicate deliberately does not reproduce all of those details.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The pinned reader keeps seeing 100 while a new snapshot sees 70. Removing v0 because a current reader prefers v2 destroys the old snapshot's history. The repair retains versions needed by its explicit pin set and active creators. PostgreSQL uses visibility horizons and more metadata, including command IDs, subtransactions, wraparound handling and tuple-header flags; this small predicate deliberately does not reproduce all of those details.</p></div>
 
 ## Transfer the idea
 

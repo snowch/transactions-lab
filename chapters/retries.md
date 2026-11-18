@@ -2,7 +2,7 @@
 
 The database rejects an unsafe attempt. Your retry can still break the business rule if it reuses the observation that caused the attempt.
 
-**You will:** Specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** [write skew](./write-skew.html) and [validation](./validation.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** specify a full retry boundary, refresh decision inputs, and keep external effects safe across attempts. **Prerequisites:** [write skew](./write-skew.html) and [validation](./validation.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 <!-- concept: retry -->
 
@@ -12,7 +12,7 @@ A first observes two doctors at version 0; B leaves and advances the version. Fo
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with a statement-only retry and one forced conflict. Select **Step** through the first read, B’s commit, and A’s second attempt. Compare `observed` and `expectedVersion` before and after the retry.
 
 <!-- experiment -->
 
@@ -22,13 +22,13 @@ Trace the observation, competing commit and validation failure. In the baseline,
 
 ## Change one thing
 
-Compare the observation and attempt count in both scenarios. Sketch a retry loop that catches retryable failures, rolls back, waits with bounded jitter, starts a fresh transaction and reruns all decision reads. Include a maximum retry budget; indefinite retries are not a liveness guarantee.
+Choose **Repair** and select **Run to end**. Compare `attempts`, `observed`, `expectedVersion` and `onCall` with **Baseline**. Both policies start a second attempt. Which policy refreshes the read that justified A’s decision?
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+Use the comparison to sketch a retry loop. On a retryable conflict, abandon the attempt, wait for a bounded delay, open a new transaction, and repeat the reads and writes. Set a maximum number of attempts.
 
-<details><summary>Hint 1 · Follow the state</summary><p>List the values computed before the failed UPDATE. Which of them depended on a snapshot that is no longer valid?</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>A retry callback must not send an email or initiate a new payment on each attempt unless that effect has its own stable identity and recovery strategy.</p></details>
-<details><summary>Worked explanation</summary><p>A serialization failure protects the aborted attempt. It cannot repair a stale decision retained in application memory. The repaired transaction reevaluates the business predicate with fresh state. Retry the complete decision and all its local writes, while classifying errors: sold out, a unique-key conflict and a transient serialization failure do not necessarily mean the same thing.</p></details>
+<details><summary>Find the stale decision inputs</summary><p>List the values computed before the failed UPDATE. Which of them depended on a snapshot that is no longer valid?</p></details>
+<details><summary>Place external calls outside the retry</summary><p>A retry callback must not send an email or initiate a new payment on each attempt unless that effect has its own stable identity and recovery strategy.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>A serialization failure protects the aborted attempt. It cannot repair a stale decision retained in application memory. The repaired transaction reevaluates the business predicate with fresh state. Retry the complete decision and all its local writes, while classifying errors: sold out, a unique-key conflict and a transient serialization failure do not necessarily mean the same thing.</p></div>
 
 ## Under the hood: validation fails before publication
 

@@ -1,6 +1,6 @@
 # State the invariant.
 
-A transfer can preserve the total money and still pay the wrong person. Write the promise precisely enough that a test can catch that mistake.
+A transfer can preserve the total money and still pay the wrong person. An **invariant** is a rule the operation must preserve. A **postcondition** describes the outcome a specific request must produce. Test both rules for the same transfer.
 
 **You will:** distinguish a conservation rule from the intended business outcome and write an independent verification query. **Prerequisites:** basic SELECT and UPDATE. **Runtime:** real PostgreSQL through PGlite; one private connection on this page.
 
@@ -8,18 +8,22 @@ A transfer can preserve the total money and still pay the wrong person. Write th
 
 ## Predict
 
-Alice and Bob each start with 100. Alice asks to send Bob 30. Compare two possible final states: 70/130 and 50/150. Which conservation and nonnegative checks can distinguish them? Write a request-specific test before running the defective transfer.
+Alice and Bob each start with 100. Alice asks to send Bob 30. Compare Alice/Bob balances of 70/130 and 50/150. Both pairs have total 200 and nonnegative balances. What check can distinguish the requested transfer from the other outcome?
 
 ## Inspect the initial state
+
+The page prepares one private PostgreSQL database with Alice and Bob at 100 each. Select **Run SQL** in **SQL 01**. Inspect `balance` for each `id` and the `total`.
 
 ```sql
 SELECT id, balance FROM accounts ORDER BY id;
 SELECT sum(balance) AS total FROM accounts;
 ```
 
-An **invariant** is a property that must remain true across the operations being considered. Here the total must stay 200 and balances must stay nonnegative. The request also has a postcondition: Alice has 70 and Bob has 130 after this particular transfer succeeds.
+For this request, the total must stay 200 and balances must stay nonnegative. The requested result is Alice at 70 and Bob at 130.
 
 ## Run the defective transfer
+
+Select **Run SQL** in **SQL 02** with the code unchanged. Compare `conserved` and `nonnegative` with the individual balances. Which row received the credit?
 
 ```sql
 BEGIN;
@@ -32,11 +36,11 @@ FROM accounts;
 SELECT id, balance FROM accounts ORDER BY id;
 ```
 
-Both invariant checks pass. Inspect the individual rows before deciding whether the request succeeded. A passing test can be too weak.
+Both invariant checks return true while Alice and Bob still have 100 each. The requested result is missing.
 
 ## Break, repair, verify
 
-Reset the database. Change the second update to credit Bob and run it again. Then run this independent postcondition check:
+First select **Run SQL** in **SQL 03**, leaving the defective result in the database. `intended_transfer_completed` is false. Select **Reset database** above **SQL 01** and wait for **Ready**. In **SQL 02**, change only the second `WHERE id = 'alice'` to `WHERE id = 'bob'`. Run **SQL 02** and then this **SQL 03** check again.
 
 ```sql
 SELECT (SELECT balance FROM accounts WHERE id = 'alice') = 70
@@ -44,11 +48,11 @@ SELECT (SELECT balance FROM accounts WHERE id = 'alice') = 70
    AS intended_transfer_completed;
 ```
 
-The original published sequence deliberately returns false. Your repair should make it true while preserving the total. Restore SQL restores the text; Reset database restores the data. All editors on this page share one database; navigation starts a fresh one.
+Look for `intended_transfer_completed` changing to true while `conserved` stays true. **Reset database** reloads the fixture and keeps your SQL text. **Restore SQL** changes only the selected editor. Use **Recover edit** to retrieve its previous text.
 
 <details><summary>Hint 1 · Follow the identity</summary><p>Compare the recipient in the request with the predicate in the second UPDATE. Arithmetic correctness does not establish that the intended row changed.</p></details>
 <details><summary>Hint 2 · Keep two kinds of checks</summary><p>Use a general invariant for every transfer and a specific expected outcome for this request. Neither replaces the other.</p></details>
-<details><summary>Worked explanation</summary><p>The first transaction debits and credits Alice, leaving both balances at 100. It conserves money and respects the row constraints, but fails the requested effect. Crediting Bob produces 70 and 130. An explicit transaction makes the chosen statements atomic; it does not choose the right statements for you.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The first transaction debits and credits Alice, leaving both balances at 100. It conserves money and respects the row constraints, but fails the requested effect. Crediting Bob produces 70 and 130. An explicit transaction makes the chosen statements atomic; it does not choose the right statements for you.</p></div>
 
 ## Under the hood: who enforces which rule?
 
@@ -60,7 +64,7 @@ The engine also tracks a transaction descriptor and its tentative effects. Atomi
 
 ## Transfer the idea
 
-Add a fee account. Define the conservation rule for a transfer of 30 with a fee of 2, stating who pays it. Write expected individual balances and a query that would catch a fee accidentally credited to Bob. Record which checks are enforced by the database and which your application or verifier must enforce.
+Design a three-account variant in **Write your design notes**. State who pays a fee of 2 on a transfer of 30, and give the expected balances for Alice, Bob and the fee account. Write a query that would catch a fee accidentally credited to Bob. The prepared fixture has two accounts; this is a design task.
 
 **Success criteria:** show a state that passes conservation but fails the requested transfer; submit a query checking both individual balances; distinguish an enforced constraint from an application postcondition.
 

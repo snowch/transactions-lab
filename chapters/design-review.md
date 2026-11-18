@@ -18,8 +18,8 @@ Before reopening a model, predict the result of removing the consumer inbox whil
 
 ## Assemble the evidence
 
-1. Reproduce a failure in the naive capstone. Download its complete run.
-2. Repair the payment and event boundaries. Download the repaired run and a relay replay run.
+1. On [Break the order service](./order-workflow.html), select **Baseline** and **Run to end**. In **Inspect JSON or download run evidence**, select **Download run evidence**.
+2. Run **Repair** and **replay** on that page. Download each run and compare the charge, delivery and effect counts.
 3. Add a concurrent anomaly example from lost updates or write skew. State why the chosen protection applies to your actual invariant.
 4. Add a crash-prefix example from files or WAL. Identify the durable commit point and distinguish restart from power-loss claims.
 5. Use the native or server extensions where the design needs independent sessions or real file operations. Keep their limitations beside their results.
@@ -71,4 +71,4 @@ Choose a different system: a document index, account provisioning or a multi-fil
 
 **Success criteria:** submit the six core functions and named-case results, a boundary diagram, reproducible concurrency/crash/replay evidence and a failure response table; challenge one claim with a counterexample and separate implemented behavior from assumptions. Optional ARIES work is not required.
 
-Use the notebook below as your final design record. Include filenames of the downloaded evidence and a short explanation of what each run supports. A completed checklist is a review aid; the reasoning and reproducibility are the deliverable.
+Open **Write your design notes** below. Include filenames of the run evidence and what each run shows. Open **Download notes and evidence** and select **Download notebook + evidence** to keep the record. A completed checklist is a review aid; the reasoning and reproducibility are the deliverable.
