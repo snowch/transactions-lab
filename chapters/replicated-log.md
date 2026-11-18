@@ -4,6 +4,8 @@ A coordinator's decision can survive its current leader only if the protocol pre
 
 **You will:** inspect term/index pairs, implement election log comparison, trace AppendEntries prefix matching, and locate quorum commit before acknowledgement. **Prerequisites:** [consensus versus atomic commit](./consensus.html). **Runtime:** a three-node Raft-style log core with explicit send events.
 
+A **term** is a numbered leadership period. An **index** is a log position. Together they identify an entry when a leader asks a follower to match a prefix.
+
 <!-- concept: replication -->
 
 ## Predict
@@ -22,17 +24,17 @@ For this core, the leader advances commitIndex to N only when a majority has con
 
 ## Control the experiment
 
-The baseline acknowledges a local-only COMMIT, then loses A. B and C can elect B without that uncommitted entry. B commits a NOOP in its new term, and the recovered prefix has no COMMIT. The acknowledgement was unjustified.
+The page loads **Baseline** with three empty replica logs and local acknowledgement. Select **Run to end**. In **Replica logs and protocol state**, compare A’s COMMIT with the new leader’s committed prefix. Did the decision survive the election?
 
 <!-- experiment -->
 
 Each replica has its own log lane. Entry labels distinguish locally stored entries from that node’s committed prefix; a down node keeps its stable log in the picture. Compare the lanes through the election and prefix-repair events.
 
-In Repair, A first replicates COMMIT to B and commits it through a majority. After A becomes unavailable, B wins an up-to-date election. C initially rejects the assumed prefix, so B backs up and sends COMMIT plus its current-term NOOP. The new majority commits the prefix; the original decision remains recoverable.
+Choose **Repair** and select **Run to end**. Revisit both **AppendEntries to C** steps. Compare **Response** and **Previous index**, then find COMMIT in the new leader’s committed prefix. Why does C accept the second request?
 
 ## Inspect and implement the election rule
 
-Expand the source to inspect actual vote, replication and commit-index calculations. The bench asks you to implement the small log comparison used by election voters. It includes a shorter/newer-term candidate and a longer/older-term candidate so log length alone fails.
+Expand the source to inspect actual vote, replication and commit-index calculations. Select **Test implementation** in the bench. In **Your JavaScript implementation**, compare the final term first, then the final index if the terms match. Test again and compare the shorter newer-term candidate with the longer older-term candidate.
 
 <!-- mechanism-source -->
 
@@ -40,11 +42,13 @@ Expand the source to inspect actual vote, replication and commit-index calculati
 
 ## Change one thing
 
-Remove replicate:B before A's first ack. With the quorum policy the reply is withheld. Try missing-majority and explain the resulting progress limit. To inspect a failed election, restore Repair, replace elect:B with elect:C, and end the schedule immediately after that election. Inspect the votes: B's more recent log prevents C from winning. Then append append:NOOP to that shortened schedule; Run reports an error because no live leader exists. A complete invalid schedule is rejected before the UI exposes its trace, so keep the valid prefix to inspect the election itself.
+In **Repair**, open **Edit the experiment**, remove `"replicate:B"` before `"ack"`, and select **Run to end**. Read the acknowledgement step and compare with **Repair**. Choose **missing-majority** and run again. Which step shows why a client reply is withheld?
+
+Return to **Repair** and replace `schedule` with `["append:COMMIT","replicate:B","ack","crash:A","elect:C"]`. Select **Run to end** and inspect **Election votes**. Then append `"append:NOOP"` and run again. The input error explains why a leader-only operation cannot run. Remove that final entry and run to inspect the valid election history again.
 
 <details><summary>Hint 1 · Separate local append from committed prefix</summary><p>An entry in one stable log has survived that node's process restart, but is not necessarily protected against replacement after a different majority elects a leader.</p></details>
 <details><summary>Hint 2 · Order election candidates by term, then index</summary><p>Do not compare array lengths first. Terms identify leadership epochs; only when last terms tie does the last index break the tie.</p></details>
-<details><summary>Worked explanation</summary><p>A local-only acknowledgement can name an entry absent from every available majority. The repair makes the entry quorum committed before replying, then preserves it through an up-to-date election and log-prefix repair. The explicit NOOP establishes a current-term committed prefix on the new leader. This lab implements a bounded log core, not all of Raft: no election timers, concurrent leaders, arbitrary delayed messages, membership changes or log snapshots are simulated.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>A local-only acknowledgement can name an entry absent from every available majority. The repair makes the entry quorum committed before replying, then preserves it through an up-to-date election and log-prefix repair. The explicit NOOP establishes a current-term committed prefix on the new leader. This lab implements a bounded log core, not all of Raft: no election timers, concurrent leaders, arbitrary delayed messages, membership changes or log snapshots are simulated.</p></div>
 
 ## Transfer the idea
 

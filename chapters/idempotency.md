@@ -2,7 +2,9 @@
 
 The server commits the charge. The response disappears. The client knows the outcome is unknown, not that the charge failed.
 
-**You will:** Recover an ambiguous outcome with stable request identity and bind that identity to the original payload and result. **Prerequisites:** [outbox recovery boundaries](./outbox.html) and [retries](./retries.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** recover an ambiguous outcome with stable request identity and bind that identity to the original payload and result. **Prerequisites:** [outbox recovery boundaries](./outbox.html) and [retries](./retries.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
+
+An **idempotency key** identifies one logical request across attempts. **Payload binding** associates that key with the original request data, such as the amount to charge.
 
 <!-- concept: idempotency -->
 
@@ -12,7 +14,7 @@ Reuse one key but change its amount from 30 to 40. Predict charges, storedAmount
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with a new key on retry and a lost response. Select **Step** through the first charge and retry. Read `charges`, `attempts` and `response` separately.
 
 <!-- experiment -->
 
@@ -22,13 +24,11 @@ Step through the charge commit and lost response. The baseline retries with a fr
 
 ## Change one thing
 
-Try conflict. The same key is reused with a changed amount, and the checked binding rejects it. Edit binding to "unchecked" and observe the silent mismatch. Your design must specify an authenticated key scope, payload comparison, durable result, retention and concurrent-request handling.
+Choose **Repair** and select **Run to end**. Compare `charges`, `attempts` and `response` with **Baseline**. Choose **conflict** and run again. Open **Edit the experiment**, change `binding` from `"checked"` to `"unchecked"`, and select **Run to end**. Compare `charges`, `storedAmount` and `response` with **conflict**. Which model check can fail even when there is just one charge?
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
-
-<details><summary>Hint 1 · Follow the state</summary><p>A new random key on each attempt identifies attempts, not one logical request.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>The key, original parameters, effect and result must share an appropriate atomic protocol. An in-memory cache updated after charging leaves another crash gap.</p></details>
-<details><summary>Worked explanation</summary><p>A stable identity lets the server distinguish a repeated request from a new one. Recording the result atomically with the effect makes the lost response recoverable. This model assumes that atomic record exists; a real payment API has a specific contract for in-progress requests, errors and expiry. A timeout is an observation about communication, not proof of rollback.</p></details>
+<details><summary>Distinguish request and attempt keys</summary><p>A new random key on each attempt identifies attempts, not one logical request.</p></details>
+<details><summary>Store the effect and result together</summary><p>The key, original parameters, effect and result must share an appropriate atomic protocol. An in-memory cache updated after charging leaves another crash gap.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>A stable identity lets the server distinguish a repeated request from a new one. Recording the result atomically with the effect makes the lost response recoverable. This model assumes that atomic record exists; a real payment API has a specific contract for in-progress requests, errors and expiry. A timeout is an observation about communication, not proof of rollback.</p></div>
 
 ## Under the hood: the request/result record is transactional state
 

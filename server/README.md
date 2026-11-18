@@ -16,7 +16,9 @@ docker compose -f server/compose.yml exec db psql -X -U postgres -d transactions
 ```
 
 Call the terminals A, B and observer. `\set VERBOSITY verbose` includes SQLSTATE
-in errors. All sessions connect to the same server and database.
+in errors. All sessions connect to the same server and database. Run the
+sections in order. The first section creates the `lab` schema used later.
+Finish or roll back each open transaction before starting the next section.
 
 ## 1. Conditional reservation: one bicycle
 

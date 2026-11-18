@@ -40,13 +40,13 @@ The base scenario steals B's uncommitted page to disk after its log is durable. 
 
 ## Control the experiment
 
-Run the baseline and inspect the two restart passes. The first pass compensates UPDATE 8 and flushes B = 120, then crashes. On restart the faulty pointer rule follows the CLR's prevLSN through ABORT back to UPDATE 8, subtracting 5 again. The final B = 95 is a concrete double-undo failure.
+The page loads **Baseline** with three interleaved transactions and one repeated crash. Select **Run to end**. Find the final disk values and the compensation for UPDATE 8 in **UPDATEs and redo-only CLRs**. Why does the faulty `prevLSN` rule revisit UPDATE 8?
 
 <!-- experiment -->
 
 The drawing follows the recovery phase and the newest CLR. Its two arrows point to the actual prevLSN and undoNextLSN records; the faulty policy highlights the transaction-order path, while the repaired policy highlights the rollback skip path. The caption says whether that CLR is durable or still buffered.
 
-Select Repair. The first CLR skips directly to the predecessor of the update it compensated. Inspect the log table's separate prevLSN, undoNextLSN and Compensates columns. The log view follows the latest records; scroll up for earlier history and horizontally for additional columns on a narrow screen. The check counts **durable** CLRs, since a buffered record can be lost without having published its recovery action.
+Choose **Repair** and select **Run to end**. In the log table, compare `prevLSN`, `undoNextLSN` and `Compensates` for the first CLR. Read the final disk value of B. Which pointer preserves undo progress across the crash? The log view follows the latest records; scroll up for earlier history and horizontally for additional columns on a narrow screen. The check counts **durable** CLRs, since a buffered record can be lost without having published its recovery action.
 
 ## A CLR is a new forward log action
 
@@ -69,22 +69,24 @@ WAL applies to compensation too: the CLR must be durable before its changed page
 
 ## Implement the undo-chain rule
 
-Implement the pointer selection used during undo. The zero-pointer case matters: `undoNextLSN || prevLSN` would incorrectly revisit work when undoNextLSN is zero.
+Select **Test implementation** and inspect the failing CLR case. In **Your JavaScript implementation**, choose `undoNextLSN` for a CLR and `prevLSN` for the other records. Test again. Explain why `undoNextLSN || prevLSN` would follow the wrong link when `undoNextLSN` is zero.
 
 <!-- implementation -->
 
 ## Change the failure boundary
 
-- **CLR durable, page missing:** select clr-durable-page-missing. Redo must apply the durable CLR before undo follows its skip pointer.
-- **CLR not durable:** select clr-not-durable. Restart drops the volatile suffix and can generate the compensation again because that prior attempt was not made durable.
-- **Undo page already durable:** the repaired default skips the CLR's page action during redo and skips the compensated UPDATE during undo.
-- **Repeated failures:** select repeated-crashes. Track ToUndo across multiple restarts. Successful completion still has exactly one durable CLR for each original loser UPDATE.
+Choose each scenario below and select **Run to end**. Revisit the second restart’s redo and undo steps in the trace.
 
-You can also revisit any revealed trace entry and press Crash & recover here. That discards its volatile suffix and completes a restart from its actual durable log and disk pages. Download each run before changing the scenario.
+- **clr-durable-page-missing**. Find the redo action for the durable CLR and its next undo position.
+- **clr-not-durable**. Find why the first compensation can be generated again when the unfinished log record is lost.
+- **Repair**. Find the redo skip when the undo page is already durable.
+- **repeated-crashes**. Compare **ToUndo** between the restarts and count the durable CLRs for each compensated UPDATE.
+
+To test a different boundary, select a revealed trace entry and then **Crash & recover here**. The model restarts from that entry’s durable log and disk pages.
 
 <details><summary>Hint 1 · Draw both chains</summary><p>From CLR 13, prevLSN leads to ABORT 11 and then UPDATE 8. undoNextLSN leads to UPDATE 5. Only the second path represents work still needing rollback after UPDATE 8's compensation.</p></details>
 <details><summary>Hint 2 · Redo the compensation, never undo the CLR</summary><p>If the CLR reached storage but its page did not, repeat its delta during redo using the pageLSN guard. The undo phase uses its pointer; it does not create a CLR to reverse that CLR.</p></details>
-<details><summary>Worked explanation</summary><p>Analysis finishes T1 and identifies T2/T3 as losers. Redo restores missing committed and uncommitted history. Undo compensates original updates in highest-LSN order, recording each action and its next remaining predecessor. Across a failure, durable CLRs let redo reconstruct compensation already decided and let undo bypass the corresponding original update. The correct final values are A 110, B 100, C 100; the faulty prevLSN rule can instead double-undo B's final +5.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>Analysis finishes T1 and identifies T2/T3 as losers. Redo restores missing committed and uncommitted history. Undo compensates original updates in highest-LSN order, recording each action and its next remaining predecessor. Across a failure, durable CLRs let redo reconstruct compensation already decided and let undo bypass the corresponding original update. The correct final values are A 110, B 100, C 100; the faulty prevLSN rule can instead double-undo B's final +5.</p></div>
 
 ## What this core simplifies
 

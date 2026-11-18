@@ -1,44 +1,44 @@
-# Know what ran.
+# Runtime and evidence
 
-An experiment is useful when its boundary is as clear as its result. This course combines three different kinds of evidence.
+Find out which engine ran each exercise, what it prepared, and which evidence you can keep.
 
 ## Real SQL in your browser
 
-SQL cells execute genuine PostgreSQL through [PGlite](https://pglite.dev/), compiled to WebAssembly. They do not invent query output. The runtime is self-hosted with the built site and starts in a Web Worker. Each SQL page gets one private in-memory database and one connection, seeded with accounts, inventory, reservations, orders and an outbox.
+Each SQL page prepares one private in-memory database and one PostgreSQL connection using [PGlite](https://pglite.dev/). The lab loads the database and SQL engine on your device. Run the numbered cells in order unless a lesson directs you to a specific cell.
 
-Editors on one page share that database. Navigation or reset starts fresh. Restore SQL changes the editor text, not database state. An SQL error triggers rollback of an open transaction in this lab. Edits and run output are not automatically preserved after navigation; download SQL or the complete notebook first. Statements stop after a 30-second limit by terminating the worker; reset then starts fresh.
+All SQL cells on a page share that database. **Reset database** loads the sample data again and keeps the editor text. **Restore SQL** loads the original text in its own cell. **Recover edit** retrieves the previous text on that page. The activity message reports an SQL error and any automatic rollback of an open transaction. The previous successful output shows which execution produced it.
 
-Separate PGlite instances have separate databases. They are not competing clients of one shared database. The browser SQL proves statement and transaction behavior for that runtime; independent snapshots, contention, server recovery and replication need a server exercise. Browser commit is not a power-loss durability claim.
+Navigation starts a fresh database. Select **Download SQL** to keep the editor text, or use **Download notebook + evidence** to keep the text and displayed results with their sources. A query that runs longer than 30 seconds stops the worker. Use **Reset database** to continue.
+
+The browser setup demonstrates one database connection. For blocking and independent snapshots, use the shared PostgreSQL worksheet. The course uses models for replicated logs and several crash protocols.
 
 ## Controlled models
 
-Concurrency, storage and distributed-protocol widgets execute explicit JavaScript transitions. Their inputs, traces, checks and state are inspectable and exportable. Each widget identifies its assumptions. They are not measurements of a live database, disk, payment API, consensus group or broker.
+A model begins with the selected scenario’s prepared state. **Step** first shows that initial state, then advances one transition at a time. **Run to end** reveals every step. Select a trace entry to inspect its state. **Crash & recover here** uses the selected step’s durable state. In the repeated-recovery lab, pressing it again restarts from the previous recovery result.
 
-Step reveals a transition, Run to end exposes the whole schedule, and clicking a revealed trace entry revisits that state. Crash & recover discards the modeled volatile state at the selected point. Repeating recovery in the replay lab deliberately tests a second recovery failure. Original trace and recovery results are separate parts of the export.
+The changed-settings notice compares current input with the original **Baseline**. To test one policy, set the other inputs to the same values for both runs. Scenario selection and **Restore scenario** load the full preset.
 
-A green check means the named predicate holds at that state. It does not prove correctness over all inputs. Pending means that a postcondition is not yet due or recovery has not been evaluated. A failed deadlock check concerns liveness, whereas a failed inventory check concerns safety.
-
-The scenario notice names input fields that differ from that lab's original baseline preset, including changes made in the JSON editor. It does not compare outcomes or certify a controlled experiment. Match the other settings yourself when isolating a policy change; restoring a preset can change several fields at once.
+Under **Model checks at this step**, **Holds** means the displayed state meets the named rule. **Violated** identifies a state that breaks it. **Pending** marks a check whose outcome is not available at this step. These checks evaluate the model state. Use your own explanation and transfer answer to review your understanding.
 
 ## Executable internals and implementation benches
 
-Each investigation begins with an annotated concept illustration before its prediction prompt. These are authored teaching examples, rendered as static SVGs with a stacked layout on narrow screens. They explain the mechanism independently of the selected experiment; their labels and captions are not execution evidence. They remain available with JavaScript disabled and can be opened as standalone diagrams.
+Concept figures explain an authored example. Live diagrams and tables show the selected step of the running model. Before a run, the live diagram may preview its initial state. Open **Inspect JSON or download run evidence** for the model input, revealed trace and recovery history.
 
-Six core mechanism engines expose transaction publication, tuple-version visibility, lock tables/queues, optimistic version validation, buffer/log recovery and a replicated log core. Live diagrams, state tables and raw snapshots all read the same executable state. Diagrams do not advance a separate simulation. Their initial preview shows the engine’s initial arrangement; execution evidence is collected after you run or step. Input edits clear the old drawing, and revisiting a trace prefix or recovering redraws that state. The MVCC Read Committed drawing labels its fresh-statement projection explicitly. Source disclosures are generated directly from those functions; complete modules are downloadable. The snapshot write-skew model now derives read/write edges and runs an actual cycle check; it does not implement PostgreSQL's SSI dangerous-structure detection.
+The trace runs the published engine. **Test implementation** runs your function separately in a Worker against named inputs. Expand a case to compare `expected` and `actual`. A syntax or runtime error is reported separately from a case whose output differs. **Stop code** ends a running test; the worker also stops after two seconds. Edited code needs a fresh test.
 
-Implementation benches run your JavaScript function in a separate Worker against named input/output cases. You can inspect every failing input and compare a reference after trying. Stop terminates the worker; a two-second limit bounds a nonterminating attempt. Code edits invalidate prior results and save locally when storage permits. The step-through engine continues to use its published reference algorithm; the separate bench does not silently replace it. Download your implementation to change and test the full engine locally.
+**Restore starter** keeps a recoverable copy of your code when browser storage allows it. Use **Recover draft** to retrieve it. If storage blocks a save, the editor remains available; open **Download your code** for a separate copy.
 
-Notebook exports include current implementation source, the tested source, named-case results, status and build revision. Passing these finite cases is evidence, not a formal proof. The core log recovery engine has one writer and no ARIES CLRs; the optional A1 lab adds a bounded ARIES core with multiple loser chains, redo-only compensation records and repeated restart. Its checkpoint is one atomic metadata record rather than the full fuzzy-checkpoint merge protocol. The Raft-style core has explicit synchronous send events and omits timers and membership changes. Arbitrary concurrent-leader schedules are also outside the replicated-log lab. Each lab lists further limits beside its controls.
+Activity results apply to the supplied inputs and assumptions. Each model describes its limits beside the scenario. The recovery and replicated-log chapters explain where their teaching engines differ from production ARIES and Raft.
 
 ## Native and shared-server extensions
 
-The downloadable Python exercises execute real file operations in a temporary directory. Fault injection exits a process at named protocol points. It tests program restart and recovery, not abrupt power loss, hardware caches, every file system or every torn-write pattern.
+The downloadable Python exercises perform real file operations in temporary directories. The process exits at selected points and a new process inspects the result. This observes process restart with the OS still running.
 
-The Docker exercise uses independent connections to one PostgreSQL server. It tests conditional updates, snapshot write skew, serializable aborts, blocking, deadlocks and retries. It is a disposable local laboratory, with no public port. Review its README before running it.
+The shared PostgreSQL worksheet uses independent connections to a disposable local server. It tests conditional updates, snapshots, blocking, deadlocks and retries. The service publishes no network ports.
 
 ## Notes and privacy
 
-Model inputs and SQL execute on your device. The app has no hosted database, account system or analytics. Static hosting still serves requests normally. Design drafts use localStorage when available; storage restrictions are reported. Run evidence lives in memory until downloaded or the page closes. Download notebook + evidence includes current notes, SQL source and visible output, exported model runs and the current run. A self-review mark is not a test result.
+Model inputs and SQL execute on your device. The app has no hosted database, account system or analytics. Static hosting serves the site files. Browser storage keeps design drafts and bench code when permitted. Open **Download notes and evidence** to export current notes, case results, SQL source and output, and model runs. Saving the self-review mark records your own review.
 
 ## A vocabulary for the design record
 

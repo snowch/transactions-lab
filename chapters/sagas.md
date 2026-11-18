@@ -2,7 +2,7 @@
 
 Payment fails after stock was reserved. Releasing the stock also fails once. Recovery must remember the unfinished business operation.
 
-**You will:** Define a durable compensation workflow and explain why compensation differs from rollback. **Prerequisites:** [outboxes](./outbox.html) and [idempotency](./idempotency.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** define a durable compensation workflow and explain why compensation differs from rollback. **Prerequisites:** [outboxes](./outbox.html) and [idempotency](./idempotency.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 A **saga** coordinates separately committed steps and records compensating business actions if a later step fails. A compensation is another fallible operation, such as releasing a reservation; it does not rewind other systems' observations.
 
@@ -14,7 +14,7 @@ If payment is declined and releasing inventory times out, may the order be marke
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with one item, a payment decline and a failed release. Select **Step** to watch `reserved`, `workflow` and `history` during the failed compensation.
 
 <!-- experiment -->
 
@@ -24,13 +24,13 @@ Follow the reservation, declined payment and failed release. The baseline forget
 
 ## Change one thing
 
-Select Repair (compensation durable-retry). Pending compensation survives a modeled restart, the worker retries and records the release. Inspect history: reservation and release remain observable. Sketch an idempotent release keyed by reservation ID, so a retry after a lost acknowledgement cannot add stock twice. The supplied failure occurs before the first release takes effect; a lost acknowledgement after a successful release is a separate design/test case for your sketch.
+Choose **Repair** and select **Run to end**. Compare `workflow`, `reserved`, `stock` and `history` with **Baseline**. Revisit **Persist pending compensation and restart the worker**. When is it safe for the model to report a completed failure?
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+The supplied first release fails before changing stock. On paper, design a release keyed by reservation ID so a successful release followed by a lost response cannot add stock twice.
 
-<details><summary>Hint 1 · Follow the state</summary><p>Persist “release pending” before considering the failed workflow finished.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>Compensation can fail, require manual action, or be unable to reverse a real-world effect. Model those states rather than naming everything rollback.</p></details>
-<details><summary>Worked explanation</summary><p>A saga coordinates local commits and subsequent compensations. It does not generally isolate intermediate state or erase history. The repaired workflow remembers unfinished work until an idempotent compensation completes. Its design needs retry limits, alerting, ownership and reconciliation for prolonged failures.</p></details>
+<details><summary>Find the pending release record</summary><p>Persist “release pending” before considering the failed workflow finished.</p></details>
+<details><summary>Ask what compensation can restore</summary><p>Compensation can fail, require manual action, or be unable to reverse a real-world effect. Model those states rather than naming everything rollback.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>A saga coordinates local commits and subsequent compensations. It does not generally isolate intermediate state or erase history. The repaired workflow remembers unfinished work until an idempotent compensation completes. Its design needs retry limits, alerting, ownership and reconciliation for prolonged failures.</p></div>
 
 ## Under the hood: a persisted workflow state machine
 

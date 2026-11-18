@@ -2,7 +2,9 @@
 
 Each doctor sees someone else on call. Both leave. Every row update succeeds, and the combined result breaks the roster.
 
-**You will:** Distinguish a stable snapshot from serializability and identify a cross-row read/write dependency. **Prerequisites:** [snapshots](./mvcc.html) and [lost updates](./lost-update.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** distinguish a stable snapshot from serializability and identify a cross-row read/write dependency. **Prerequisites:** [snapshots](./mvcc.html) and [lost updates](./lost-update.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
+
+**Serializability** means the result matches some one-at-a-time order of the same transactions. **Write skew** occurs here when two decisions based on earlier reads change different rows and together break a rule.
 
 <!-- concept: writeSkew -->
 
@@ -12,7 +14,7 @@ Compare the overlapping schedule with A.read → A.write → B.read → B.write.
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with A and B on call and both reads scheduled before either write. Select **Step** through the two reads and both publications. Compare `reads` with `onCall` after each transaction commits.
 
 <!-- experiment -->
 
@@ -24,13 +26,13 @@ The initial roster has A and B. Step through both reads before either write. Eac
 
 ## Change one thing
 
-Run the repaired serializable scenario. One unsafe transaction aborts. Change the schedule to ["A.read", "A.write", "B.read", "B.write"]. Explain why this schedule can complete without the same abort. An abort is a signal to retry the decision, not permission to repeat an old decision.
+Choose **Repair** and select **Run to end**. Compare `onCall`, `commits` and `aborts` with **Baseline**. Identify the rejected cycle in the graph.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+Keep **Repair** selected. Open **Edit the experiment** and replace `schedule` with `["A.read", "A.write", "B.read", "B.write"]`. Select **Run to end**. What does B see in `reads` now? Use the graph and `aborts` to explain why B can stay on call without the earlier abort.
 
-<details><summary>Hint 1 · Follow the state</summary><p>Draw an arrow from A’s read of B to B’s change, and another from B’s read of A to A’s change.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>A CHECK on one doctor row cannot generally enforce a rule across the whole roster. Protect the decision set, or serialize through an agreed invariant-owner row.</p></details>
-<details><summary>Worked explanation</summary><p>The baseline snapshot preserves each local view while both doctors leave. The repaired model rejects the known unsafe dependency. It is deliberately smaller than PostgreSQL SSI, whose abort point can differ. Use independent PostgreSQL sessions in the server extension to reproduce real write skew and the serialization failure.</p></details>
+<details><summary>Draw the dependency arrows</summary><p>Draw an arrow from A’s read of B to B’s change, and another from B’s read of A to A’s change.</p></details>
+<details><summary>Protect the cross-row rule</summary><p>A CHECK on one doctor row cannot generally enforce a rule across the whole roster. Protect the decision set, or serialize through an agreed invariant-owner row.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The baseline snapshot preserves each local view while both doctors leave. The repaired model rejects the known unsafe dependency. It is deliberately smaller than PostgreSQL SSI, whose abort point can differ. Use independent PostgreSQL sessions in the server extension to reproduce real write skew and the serialization failure.</p></div>
 
 ## Under the hood: derive the conflicting dependencies
 

@@ -2,7 +2,7 @@
 
 Recovery writes the missing result, then fails before clearing its work list. The next recovery must not apply the effect twice.
 
-**You will:** Choose a replay-safe representation and test repeated failure during recovery. **Prerequisites:** [pageLSNs, redo and undo](./recovery-engine.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** choose a replay-safe representation and test repeated failure during recovery. **Prerequisites:** [pageLSNs, redo and undo](./recovery-engine.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 <!-- concept: recovery -->
 
@@ -12,7 +12,7 @@ Use initial = 80 and amount = 5, instead of the worked example’s 100 and 20. P
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with `initial` set to `100`, `amount` set to `20`, and an increment record. Select **Run to end**. Record `balance`, `target` and `replays` before you restart.
 
 <!-- experiment -->
 
@@ -22,13 +22,13 @@ Run the increment baseline to its final step, then press Crash & recover here. I
 
 ## Change one thing
 
-Select Repair (representation after-image). Run to the end and crash repeatedly. Now test your predicted fixture: initial = 80 and amount = 5. Use those same values for each representation; compare results after one replay and two additional Crash & recover presses. Finally try amount = 0 and explain why a passing result there cannot establish replay safety for nonzero operations. Record the log identity needed to distinguish replay from a genuinely new operation.
+Choose **Repair** and select **Run to end**. Select **Crash & recover here** twice. Compare `balance` and `replays` with **Baseline**.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+To test your prediction, return to **Baseline**, open **Edit the experiment**, and set `initial` to `80` and `amount` to `5`. Select **Run to end**, record `balance`, then select **Crash & recover here** twice and record it after each restart. Repeat those same edits and actions with **Repair**. In **Baseline**, change only `amount` to `0`, run and restart again. Why is the result uninformative about repeated nonzero increments?
 
-<details><summary>Hint 1 · Follow the state</summary><p>Idempotence means repeating this operation has the same effect as applying it once.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>An increment can also be replay-safe if an implementation tracks applied log positions atomically. Representation and deduplication are alternative tools, with different requirements.</p></details>
-<details><summary>Worked explanation</summary><p>The baseline reaches 120 once, then 140 on repeated replay. An after-image of 120 remains 120. Actual databases often use page log sequence numbers and recovery rules rather than relying only on whole-page overwrites. The core requirement is repeatable recovery under the system’s failure model. Recovery itself is a failure-prone workload.</p></details>
+<details><summary>Define idempotent replay</summary><p>Idempotence means repeating this operation has the same effect as applying it once.</p></details>
+<details><summary>Track applied records by identity</summary><p>An increment can also be replay-safe if an implementation tracks applied log positions atomically. Representation and deduplication are alternative tools, with different requirements.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The baseline reaches 120 once, then 140 on repeated replay. An after-image of 120 remains 120. Actual databases often use page log sequence numbers and recovery rules rather than relying only on whole-page overwrites. The core requirement is repeatable recovery under the system’s failure model. Recovery itself is a failure-prone workload.</p></div>
 
 ## Under the hood: replay progress is data too
 

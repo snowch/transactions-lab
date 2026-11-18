@@ -1,18 +1,14 @@
-# Build the machinery.<br>Understand the promise.
+# Transactions Lab
 
-How can a database hide uncommitted work, preserve an old snapshot, or recover a commit whose data pages were never written? Build and inspect the mechanisms that make transactions work.
+Trace what a transaction exposes to readers, what it commits, and what can be recovered after a failure. Then implement the rules that control those outcomes.
 
-<div class="hero-actions"><a class="start-link" href="./invariants.html">Enter the laboratory →</a><a href="./transaction-manager.html">Start inside the engine</a></div>
-
-<div class="lab-strip"><span><strong>24</strong> core investigations</span><span><strong>6</strong> core implementation benches</span><span><strong>0</strong> accounts to create</span></div>
+<div class="hero-actions"><a class="start-link" href="./invariants.html">Start with the transfer invariant</a></div>
 
 ## Open the engine
 
-A transaction is more than BEGIN and COMMIT. Inside the system are transaction descriptors, private write sets, tuple versions, snapshots, lock queues, validation rules, buffer frames and log records. Each exists because another operation or a crash can occur at an inconvenient point.
+Start each investigation with a diagram and a prediction. Run the original experiment, change one input, and compare the resulting SQL rows or model state. The implementation benches run your JavaScript function on named cases.
 
-Start each investigation with an annotated concept diagram: see what the components do, how they relate and why a failure breaks the promise. Then predict, trace the structures in a live experiment, implement small algorithms and explain the resulting application behavior. The concept illustrations teach the mechanism before you run it; the live diagrams show the exact execution state as you step or recover. Transaction design stays part of the course: it becomes easier to choose a boundary once you can explain what enforces it.
-
-**Build → predict → step → break → repair → explain.**
+Use the diagram to understand the mechanism. Cite the output from your actual run in the design record.
 
 ## What you will implement
 
@@ -40,24 +36,18 @@ Each implementation bench executes your JavaScript against named cases, includin
 
 ## Optional advanced topic: ARIES
 
-After the WAL and recovery foundation, continue to [A1 · ARIES recovery](./aries.html). Trace interleaved winners and losers, dirty-page/transaction-table analysis, repeat-history redo and compensation log records. Crash during undo and implement the undoNextLSN rule that prevents double undo. This adds one optional implementation bench to the six core benches.
+[Recover from a crash during undo](./aries.html) after you finish the WAL and recovery investigations. This advanced lab adds a seventh implementation bench and is optional for the final design review.
 
 ## Before you begin
 
-Be comfortable reading basic SQL and short JavaScript functions using objects, arrays and sets. We introduce transaction internals as they become necessary. The first investigations establish the invariant and lifecycle; you can revisit them from later implementation labs.
+Read basic SQL and short JavaScript functions using objects, arrays and sets. Use a modern browser with JavaScript and WebAssembly to run the experiments. The first investigation introduces invariants and transaction boundaries.
 
-Start in a modern browser with JavaScript and WebAssembly. SQL investigations run genuine PostgreSQL through self-hosted PGlite. Mechanism labs execute small, explicit engines on your device. Selected native Python and shared-server exercises connect the model to real files and independent PostgreSQL sessions.
-
-The engines are intentionally bounded. They expose real algorithms without pretending to reproduce every detail of PostgreSQL, ARIES or Raft. Each mechanism states which parts it implements and which assumptions make the trace valid. Reading a toy engine and examining a production system are complementary activities.
+SQL investigations run PostgreSQL through PGlite. The teaching models use explicit schedules and named failure assumptions. The optional native and server exercises use real files or independent PostgreSQL sessions.
 
 ## Leave with an implementation and an explanation
 
-Record a prediction before running. Step through state changes and identify the exact read, dependency, publication or durable record behind the result. Implement a primitive, inspect failing cases, and download your code and evidence. Then apply what you learned to an independent design task.
+Keep your prediction, the decisive result, and an explanation of what changed. When a preset changes several settings, match the other values before attributing the outcome to one setting. The final review uses the six core functions and their run evidence.
 
-Use the diagram as a worked example, then answer the prediction's changed schedule, input or failure boundary. For a causal comparison, hold the fixture and schedule fixed while changing one policy. Presets can change multiple settings; the experiment names those differences from the baseline. Record what you actually changed rather than attributing every difference to the preset's label.
-
-Each investigation ends with specific success criteria. Keep a prediction, the decisive state or SQL result, a controlled comparison and an explanation of the mechanism's limits. A green check or a saved self-review mark alone does not complete the investigation. The final review requires the six core functions and their evidence; A1 is an optional advanced continuation.
-
-Draft notes and implementation code save locally when browser storage is available. SQL database state and run results last only for the current page. Download the complete notebook before leaving if you need to preserve evidence. A passing case is evidence for that case, not proof over all inputs.
+Notes and bench code can save in this browser. SQL and execution results last for the current page. Open **Download notes and evidence** and choose **Download notebook + evidence** to keep them.
 
 [Runtime and primary sources](./runtime.html) · [Run the mechanisms locally](./native.html) · [Source and issue tracker](https://github.com/snowch/transactions-lab)

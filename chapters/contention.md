@@ -2,7 +2,7 @@
 
 A single lock makes the service easy to reason about. It also makes independent customers wait behind one another.
 
-**You will:** Compare lock granularity under explicit assumptions and preserve the scope of the invariant while improving concurrency. **Prerequisites:** [deadlocks and lock ownership](./locks.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** compare lock granularity under explicit assumptions and preserve the scope of the invariant while improving concurrency. **Prerequisites:** [deadlocks and lock ownership](./locks.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 <!-- concept: contention -->
 
@@ -12,7 +12,7 @@ Eight requests each need three logical service ticks. With one global slot, how 
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with eight requests, four keys, three logical ticks per batch, and a global lock. Select **Run to end** and find `slots` and `clock` in **Values at this step**.
 
 <!-- experiment -->
 
@@ -22,13 +22,11 @@ The baseline processes one request per batch. Inspect completed, waiting, slots 
 
 ## Change one thing
 
-Change requests, keys and service separately. Derive the batch count and predict clock before running. Set keys = 1: the fine-grained repair should have no concurrency advantage. Explain what the simplified uniform-key workload hides about hot products.
+Choose **Repair** and select **Run to end**. Compare `slots` and `clock` with **Baseline**. Open **Edit the experiment**, change `keys` from `4` to `1`, then select **Run to end** again. Does per-key locking still save any logical ticks? Keep the request count and service ticks fixed so the key count explains the change.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
-
-<details><summary>Hint 1 · Follow the state</summary><p>The modeled completion time is ceil(requests / slots) × service. The arithmetic is meaningful only under the stated independence and scheduling assumptions.</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>A lock per account does not protect a bank-wide limit unless all relevant changes also coordinate over that limit.</p></details>
-<details><summary>Worked explanation</summary><p>The global design preserves counting but finishes the default workload in 24 ticks. Four independent slots finish it in 6 ticks. This is a model of available parallelism, not evidence of a fourfold production speedup. Real waiting also depends on skew, lock duration, I/O, retries, fairness and scheduling.</p></details>
+<details><summary>Calculate batches and logical ticks</summary><p>The modeled completion time is ceil(requests / slots) × service. The arithmetic is meaningful only under the stated independence and scheduling assumptions.</p></details>
+<details><summary>Check the scope of the lock</summary><p>A lock per account does not protect a bank-wide limit unless all relevant changes also coordinate over that limit.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The global design preserves counting but finishes the default workload in 24 ticks. Four independent slots finish it in 6 ticks. This is a model of available parallelism, not evidence of a fourfold production speedup. Real waiting also depends on skew, lock duration, I/O, retries, fairness and scheduling.</p></div>
 
 ## Under the hood: lock hold time becomes a queue
 

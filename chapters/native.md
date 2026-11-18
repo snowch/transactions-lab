@@ -1,16 +1,16 @@
-# Take the boundary to a real system.
+# Run against real systems
 
 Use the browser to control the failure story, then test the corresponding behavior against real file operations or independent PostgreSQL sessions.
 
 ## Run and change the mechanism engines
 
-The source displayed in the implementation labs is executable JavaScript, not a separate illustrative listing. From the repository, invoke the pure engine directly:
+With Node.js 24, open a terminal in the repository root. Run the command below to print the repaired MVCC trace as JSON. Compare the final `reads` values with the browser’s **Observed values**.
 
 ```sh
 node --input-type=module -e "import {mvcc, mechanismDefinitions} from './web/mechanisms.js'; console.log(JSON.stringify(mvcc(mechanismDefinitions.mvcc.presets.repaired), null, 2));"
 ```
 
-Download your function from an implementation bench and run its named cases locally:
+In the MVCC bench, open **Download your code** and select **Download implementation**. Save `mvcc-implementation.mjs` in the repository root, then run the named cases in your terminal.
 
 ```sh
 node web/verify-implementation.mjs mvcc ./mvcc-implementation.mjs
@@ -42,7 +42,7 @@ docker compose -f server/compose.yml up -d --wait
 docker compose -f server/compose.yml exec db psql -U postgres -d transactions
 ```
 
-Open three terminals against the same service. Follow the session A, B and observer schedules in [the server worksheet](./downloads/server/README.md). Copy each statement in order, leaving the specified transaction open. The worksheet includes a conditional reservation, write skew versus Serializable, and a deadlock repair. Reset fixtures between experiments.
+In three terminals, run the `docker compose … exec` command above against the same service. Name the terminals A, B and observer. Follow those schedules in [the server worksheet](./downloads/server/README.md). Copy each statement in order, leaving the specified transaction open. The worksheet includes a conditional reservation, write skew versus Serializable, and a deadlock repair. Reset fixtures between experiments.
 
 Downloads: [Compose service](./downloads/server/compose.yml) · [interactive worksheet](./downloads/server/README.md) · [automated verification](./downloads/server/verify.mjs).
 
@@ -68,9 +68,9 @@ python3 -m unittest discover -s native -p 'test_*.py'
 
 The file experiment runs a child process that writes a temporary file, optionally fsyncs it, renames it, optionally fsyncs the directory and acknowledges completion. Fault injection stops the child at the named boundary. A new process reads the resulting file and prints observations. The parent uses a fresh temporary directory for every run.
 
-Try `--protocol rename-only` and each crash point: `after-write`, `after-file-sync`, `after-rename`, `after-dir-sync`. A point absent from the selected protocol is not reached; the output reports that no injected exit occurred. Change the script to use an in-place write and explain what another reader could observe. A process exit does not remove OS caches: seeing new after a crash is not evidence that fsync was unnecessary.
+Repeat the first file command with `--protocol rename-only`. Then repeat it for each protocol with `--crash after-write`, `--crash after-file-sync`, `--crash after-rename` and `--crash after-dir-sync`. Compare the injected exit status and the contents read by the new process. A protocol that omits a step will report that it did not reach that point. The OS can still retain buffered data after a process exits.
 
-The journal exercise persists a committed record, replays it, simulates a recovery interruption before clearing the record and replays on a new startup. Compare repeated increment with after-image replay. Inspect actual JSON files through the code; the invariant is the final balance, not just a successful exit status.
+The journal commands save a committed record, replay it, then restart recovery before the record is cleared. Compare the last entry in `startup_balances` with `expected` for both representations. Which representation repeats the committed effect?
 
 Downloads: [file replacement](./downloads/native/files.py) · [journal recovery](./downloads/native/journal.py) · [native checks](./downloads/native/test_native.py).
 

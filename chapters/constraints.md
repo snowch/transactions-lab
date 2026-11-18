@@ -12,6 +12,8 @@ If both requests read stock = 1 before either writes, why might both application
 
 ## Inspect the fixture
 
+The page prepares one bicycle in stock and an empty reservations table. Select **Run SQL** in **SQL 01** and inspect the bike’s `stock` and the reservation row count.
+
 ```sql
 SELECT * FROM inventory ORDER BY sku;
 SELECT * FROM reservations;
@@ -20,6 +22,8 @@ SELECT * FROM reservations;
 The CHECK enforces nonnegative stock. The reservation primary key identifies a request, and its foreign key requires an existing product. These are complementary rules.
 
 ## Commit the reservation and stock together
+
+Select **Run SQL** in **SQL 02**. Compare the row returned by `RETURNING` with the bicycle’s current `stock`.
 
 ```sql
 BEGIN;
@@ -38,6 +42,8 @@ SELECT * FROM inventory WHERE sku = 'bike';
 The returned row is the evidence that this request obtained stock. An empty RETURNING result means no reservation was made; it is not a successful checkout.
 
 ## Try the second customer
+
+Select **Run SQL** in **SQL 03** on the same database. Check how many rows `RETURNING` gives `request-b` and inspect `inventory_conserved`.
 
 ```sql
 BEGIN;
@@ -59,11 +65,11 @@ The second request changes no row. This sequential run establishes the condition
 
 ## Change one thing
 
-Reset. Remove `AND stock > 0` in both cells and repeat. The second debit should fail the CHECK and the lab will roll back that transaction. Compare rejecting an invalid state with expressing a normal “sold out” outcome through a zero-row update.
+Select **Reset database** above **SQL 01** and wait for **Ready**. In **SQL 02** and **SQL 03**, delete `AND stock > 0`. Select **Run SQL** in **SQL 02**, then **SQL 03**. The second attempt should show a CHECK error. Run the unchanged **SQL 01** again to see the remaining stock and which request obtained a reservation. Compare this failure with the original zero-row result.
 
 <details><summary>Hint 1 · Check the returned row</summary><p>Do not infer success just because SQL execution completed. Count the reservation rows and inspect the UPDATE's RETURNING result.</p></details>
 <details><summary>Hint 2 · Think about retries</summary><p>A stable request ID prevents a duplicate reservation row, but an application must return the original result on retry. It must not decrement stock and then silently ignore a duplicate INSERT.</p></details>
-<details><summary>Worked explanation</summary><p>The data-modifying CTE passes a product to INSERT only when a decrement succeeds. Both effects share the transaction. Exactly one of the sequential requests obtains the bicycle. Under PostgreSQL Read Committed, a competing updater waits and reevaluates the predicate against the updated row; other isolation levels can require a transaction retry. A cross-row invariant needs more than this row-local predicate.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>The data-modifying CTE passes a product to INSERT only when a decrement succeeds. Both effects share the transaction. Exactly one of the sequential requests obtains the bicycle. Under PostgreSQL Read Committed, a competing updater waits and reevaluates the predicate against the updated row; other isolation levels can require a transaction retry. A cross-row invariant needs more than this row-local predicate.</p></div>
 
 ## Under the hood: one predicate, one protected update
 

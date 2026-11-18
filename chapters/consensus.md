@@ -2,7 +2,7 @@
 
 Replicating a coordinator can make a recorded decision more available. It cannot turn a missing participant vote into permission to commit.
 
-**You will:** Distinguish consensus over a decision log from atomic commit across resource owners. **Prerequisites:** [two-phase commit](./two-phase.html). **Runtime:** a deterministic teaching model on your device. Read its local failure assumptions below the controls.
+**You will:** distinguish consensus over a decision log from atomic commit across resource owners. **Prerequisites:** [two-phase commit](./two-phase.html). **Runtime:** a teaching model. Its assumptions appear before the scenario controls.
 
 A **quorum** is the required replica set for this exercise: a strict majority, `floor(replicas / 2) + 1`. Replica agreement concerns the decision log; participant YES/NO votes concern whether the resource owners can commit. The illustrated replication protocol is implemented in the next lab; this widget tests only the arithmetic and decision distinction.
 
@@ -14,23 +14,23 @@ With five coordinator replicas and three reachable, predict quorum and progress 
 
 ## Control the experiment
 
-Use **Step** to reveal one state transition, or **Run to end** to inspect the full trace. Click a revealed trace entry to revisit it. Choose another scenario to compare a repair; open **Edit the experiment** to change its inputs. Each scenario starts fresh.
+The page loads **Baseline** with three coordinator replicas, one reachable, and a missing participant vote. Select **Run to end** and find `reachable`, `quorum`, `participantVote` and `progress`.
 
 <!-- experiment -->
 
 ## Inspect the evidence
 
-Run the one-replica baseline. Inspect reachable and quorum. Select Repair: two replicas and all YES votes permit a durable commit decision in this simplified model. The lab models the reasoning boundary, not a working consensus protocol.
+The baseline cannot retrieve a decision. Choose **Repair** and select **Run to end**. Find the new `decision`. The preset changes both reachability and participant votes, so this comparison alone cannot establish which difference caused the result.
 
 ## Change one thing
 
-Repair changes both reachable and decision. For a controlled availability comparison, start with replicas = 3 and decision = "commit" (all participant YES votes), varying only reachable from 1 to 2. Next hold reachable = 2 and vary only decision from commit to unknown: quorum availability cannot resolve a missing participant vote. Try no-vote to make ABORT available too. Test the five-replica predictions with decision held fixed while reachability changes.
+Choose **Repair** and open **Edit the experiment**. With `replicas` at `3` and `decision` at `"commit"`, set `reachable` to `1` and select **Run to end**. Set only `reachable` to `2` and run again. Compare `quorum`, `progress` and `decision`.
 
-Download a run before changing settings. The export includes the submitted configuration, visible trace, checks, recovery attempts and model boundary. Save a baseline and a repair so the design record can refer to actual evidence.
+Keep `reachable` at `2` and change `decision` to `"unknown"`. Run again. What does quorum establish with a missing `participantVote`? Select **no-vote** and run to see a reachable quorum return ABORT. For the five-replica prediction, set `replicas` to `5` and `decision` to `"commit"`, then run at `reachable` values `2` and `3`. At `reachable` `3`, change `decision` to `"unknown"` and run once more.
 
-<details><summary>Hint 1 · Follow the state</summary><p>Ask two questions separately: what may the participants decide, and how is that decision made durable and discoverable?</p></details>
-<details><summary>Hint 2 · Locate the boundary</summary><p>A minority read is not automatically authoritative. A real consensus system has election, term, log and read rules that this arithmetic exercise does not implement.</p></details>
-<details><summary>Worked explanation</summary><p>With three replicas, a majority requires two. Replication reduces exposure to some coordinator failures under protocol assumptions, but a partition can prevent progress. Commit validity still depends on the participants and the commit protocol. Consensus, atomic commit, serializability and linearizability describe different properties; none is a synonym for the others.</p></details>
+<details><summary>Separate votes from replica access</summary><p>Ask two questions separately: what may the participants decide, and how is that decision made durable and discoverable?</p></details>
+<details><summary>Check what a minority can establish</summary><p>A minority read is not automatically authoritative. A real consensus system has election, term, log and read rules that this arithmetic exercise does not implement.</p></details>
+<div class="result-explanation"><h3>Why this result occurs</h3><p>With three replicas, a majority requires two. Replication reduces exposure to some coordinator failures under protocol assumptions, but a partition can prevent progress. Commit validity still depends on the participants and the commit protocol. Consensus, atomic commit, serializability and linearizability describe different properties; none is a synonym for the others.</p></div>
 
 ## Under the hood: a majority is part of a protocol
 
